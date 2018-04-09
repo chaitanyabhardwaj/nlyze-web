@@ -1,0 +1,576 @@
+
+<!--
+	TODO: FILL IN THE BLANKS(META)
+	DESCRIPTION
+	OWNER
+	FAVICON
+ -->
+ <!--
+ 	.container - block divs
+ 	.inner-container - inline-block divs
+ 	Every section of the page contains 'title' and/or 'content', enclosed within that section's container
+ -->
+<!DOCTYPE html><html lang="en-US" dir="ltr"><head><meta charset="utf-8"><title>Smartdroid Collector</title><meta name="description" content="" ><meta name="owner" content=""><meta name="author" content="Chaitanya Bhardwaj" ><meta name="referrer" content="origin-when-cross-origin" ><link rel="icon" type="image/x-icon" href="/resources/favicon_title.png">
+<link rel="stylesheet" type="text/css" href="stylesheets/basicstyle.css">
+<link rel="stylesheet" type="text/css" href="stylesheets/logs-large.css">
+<link rel="stylesheet" type="text/css" href="stylesheets/index-large.css">
+<link rel="stylesheet" type="text/css" href="/scripts/jquery-ui-1.12.1.custom/jquery-ui.min.css">
+<meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<script src="/scripts/jquery-3.2.1.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-functions.js"></script>
+<script src="/scripts/main.js"></script>
+<script src="/scripts/jquery-ui-1.12.1.custom/jquery-ui.min.js"></script>
+<script src="/scripts/inspector.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js"></script>
+<script src="/scripts/table2excel/external/FileSaver.min.js"></script>
+<script src="/scripts/table2excel/scripts/excel-gen.js"></script>
+
+<script>
+	'use strict';
+
+	//Initialize Logs
+	function Logs(user) {
+		const ins = this;
+		this.userRef = user;
+		this.db = firebase.firestore();
+		this.logsRef = this.db.collection('users/' + user.uid + '/products/np001/logs');
+		//Shortcuts to DOM elements
+		this.lineName = $('#select-line-name');
+		this.reasonName = $('#select-reason-name');
+		this.familyName = $('#select-family-name');
+		this.date = $('#select-date');
+		this.frequency = $('#select-frequency');
+		this.table = $('#main-table');
+		//Instantiate the layout
+		//this.initLayout();
+		//Initialize datepicker
+		$('#select-date').datepicker({
+   			changeMonth : true,
+    		changeYear : true,
+    		showWeek : true,
+    		dateFormat : 'mm/dd/yy',
+    		firstDay : 1,
+    		onSelect: function(dateText, inst) {
+    			var date = $(this).datepicker('getDate');
+				ins.weekValue = $.datepicker.iso8601Week(new Date(dateText));
+				ins.monthValue = date.getMonth() + 1;
+				ins.yearValue = date.getFullYear();
+        	}
+    	});
+		//Add event listeners
+		$('#add-log-button').click(function() {
+			ins.fetchFieldValues();
+			ins.addLogEventListener();
+		});
+		$('#table-button-1').click(function() {
+			//ins.exportTableToFile();
+			ins.exportTableToExcel();
+		});
+	};
+
+	//Initialize BttnFetcher
+	function BttnFetcher(user, layoutComponent) {
+		this.user = user;
+		this.layout = layoutComponent;
+		this.db = firebase.firestore();
+		this.buttonRef = this.db.collection('users/' + user.uid + '/products/np001/button_mapping');
+		this.logRef = this.db.collection('users/' + user.uid + '/products/np001/logs');
+		this.reasonsRef = this.db.collection('users/' + user.uid + '/products/np001/reasons');
+		this.BASE = "https://api.bt.tn/2014-06/";
+		//start fetching
+		this.fetchBttn();
+		//wait 7sec and refresh
+		var timer = setInterval(function() {
+			$('.loader').css('display', 'none');
+			layoutComponent.initLayout();
+			clearInterval(timer);
+		}, 7000);
+	};
+
+	BttnFetcher.prototype.fetchBttn = function() {
+		const inst = this;
+		var eventObj; var reason = [], j = 0;
+		//get reason time
+		this.reasonsRef.get().then(function(querySnapshot) {
+			querySnapshot.forEach(function(doc) {
+				reason[j++] = {
+					name : doc.data().name,
+					time : doc.data().time
+				};
+			});
+		});
+		//get buttons
+		this.buttonRef.get().then(function(querySnapshot) {
+			var bttnTime;
+			querySnapshot.forEach(function(doc) {
+				//Get request to fetch from the bt.tn server
+				var batch = inst.db.batch();
+				if(doc.data().lastPressed !== 0) {
+					if(doc.data().lineName === 'N/A' || doc.data().reasonName === 'N/A' || doc.data().familyName === 'N/A') {
+						displayError('BUTTON ' + doc.data().name + ' NOT LINKED WITH COMPONENTS');
+					}
+					else {
+						$.get(inst.BASE + doc.id + "/feed?after=" + (doc.data().lastPressed + 1), function(data) {
+							eventObj = data.events;
+							console.log(eventObj.length);
+							//update button_mapping
+							if(eventObj.length != 0) {
+								inst.buttonRef.doc(doc.id).update({
+									lastPressed : eventObj[0].timestamp
+								}).then(function() {
+									//button_mapping timestamp updated
+									for(var i = 0; i < eventObj.length; i++) {
+										if(eventObj[i].event_type === 'pressed') {
+											//get corresponding time
+											for(j = 0; j < reason.length; j++) {
+												if(doc.data().reasonName === reason[j].name) {
+													bttnTime = reason[j].time;
+													break;
+												}
+											}
+											//convert timestamp to date
+											var newDate = new Date(eventObj[i].timestamp * 1000);
+											//store log
+											var newLogRef = inst.logRef.doc();
+											batch.set(newLogRef, {
+												lineName : doc.data().lineName,
+												reasonName : doc.data().reasonName,
+												familyName : doc.data().familyName,
+												date : eventObj[i].timestamp,
+												weekNum : newDate.getWeek(),
+												monthNum : newDate.getMonth() + 1,
+												year : newDate.getFullYear(),
+												frequency : 1,
+												totalTime : bttnTime
+											});
+										}
+									}
+									//commit the logs batched update
+									batch.commit().then(function() {
+										console.log('Logs update');
+									});
+								});
+							}
+						});
+					}
+				}
+			});
+		});
+	};
+
+	Logs.prototype.initLayout = function() {
+		//Clear all fields & data
+		$('#select-date').val("");
+		$('#select-frequency').val("");
+		$('#main-table').find('tr.data-row').remove();
+		$('select').find('option.data-option').remove();
+		//Add table data
+		this.logsRef.orderBy('date').get().then(function(querySnapshot) {
+			var forDate, dateStr, flag = 1;
+			querySnapshot.forEach(function(doc) {
+				flag = 0;
+				forDate = new Date(doc.data().date * 1000);
+				dateStr = forDate.getDate() + '/' + (forDate.getMonth() + 1) + '/' + forDate.getFullYear();
+				$("<tr class='data-row'>").appendTo("table.startAppend")
+	    			.append($("<td class='line-name-col'>").text(doc.data().lineName))
+	    			.append($("<td class='reason-name-col'>").text(doc.data().reasonName))
+	    			.append($("<td class='family-name-col'>").text(doc.data().familyName))
+	    			.append($("<td class='date-col'>").text(dateStr))
+	    			.append($("<td class='frequency-col'>").text(doc.data().frequency))
+	    			.append($("<td class='total-time-col'>").text(doc.data().totalTime));
+			});
+			if(flag) {
+				displayError('NO RECORDS FOUND');
+			}
+		});
+		//Pull lines name
+		const linesRef = this.db.collection('users/' + this.userRef.uid + '/products/np001/lines');
+		linesRef.orderBy('id').get().then(function(querySnapshot) {
+			querySnapshot.forEach(function(doc) {
+				$("<option class='data-option'>").appendTo("select#select-line-name").text(doc.data().name);
+			});
+		});
+		//Pull reasons name
+		const reasonsRef = this.db.collection('users/' + this.userRef.uid + '/products/np001/reasons');
+		reasonsRef.orderBy('id').get().then(function(querySnapshot) {
+			querySnapshot.forEach(function(doc) {
+				$("<option class='data-option'>").appendTo("select#select-reason-name").text(doc.data().name);
+			});
+		});
+		//Pull family name
+		const familyRef = this.db.collection('users/' + this.userRef.uid + '/products/np001/family');
+		familyRef.orderBy('id').get().then(function(querySnapshot) {
+			querySnapshot.forEach(function(doc) {
+				$("<option class='data-option'>").appendTo("select#select-family-name").text(doc.data().name);
+			});
+		});
+	};
+
+	Logs.prototype.fetchFieldValues = function() {
+		this.lineNameValue = this.lineName.find(':selected').val();
+		this.reasonNameValue = this.reasonName.find(':selected').val();
+		this.familyNameValue = this.familyName.find(':selected').val();
+		this.dateValue = this.date.val();
+		this.frequencyValue = this.frequency.val();
+	};
+
+	Logs.prototype.addLogEventListener = function() {
+		const inst = this;
+		//validate fields
+		const validate = this.validated();
+		if(validate.status) {
+			//validated
+			//convert date to timestamp
+			const timestamp = new Date(this.dateValue).getTime();
+			//get reason time interval
+			this.db.doc('users/' + this.userRef.uid + '/products/np001/reasons/' + this.reasonNameValue).get().then(function(doc) {
+				if(doc.exists) {
+					//Add log
+					inst.logsRef.add({
+						lineName : inst.lineNameValue,
+						reasonName : inst.reasonNameValue,
+						familyName : inst.familyNameValue,
+						date : (timestamp/1000),
+						weekNum : inst.weekValue,
+						monthNum : inst.monthValue,
+						year : inst.yearValue,
+						frequency : parseInt(inst.frequencyValue),
+						totalTime : (doc.data().time * inst.frequencyValue)
+					}).then(function(logDocRef) {
+						//Log added
+						displayError('LOG RECORDED SUCCESSFULLY');
+						inst.initLayout();
+					}).catch(function(error) {
+						console.log(error);
+					});
+				}
+			}).catch(function(error) {
+				console.log(error)
+			});
+		}
+		else {
+			if(new RegExp('EMPTY_FIELD').test(validate.text)) {
+				displayError('PLEASE FILL IN ALL THE FIELDS');
+			}
+			else if(new RegExp('INVALID_FIELD').test(validate.text)) {
+				const errorNum = $.trim(validate.text.split('/')[1]);
+				switch(errorNum) {
+					//other cases not implemented
+					case '5' : displayError('INVALID FREQUENCY'); break;
+					default : displayError('INVALID FIELD ENTERED');
+				}
+			}
+		}
+	};
+
+	Logs.prototype.exportTableToFile = function() {
+		var retContent = [], retString = '';
+		$('.data-row').each(function(id, element) {
+			var elementText = [];
+			$(element).children('td').each(function(childId, childElement) {
+				elementText.push($(childElement).text());
+			});
+			retContent.push(`${elementText.join(' - ')}`);
+		});
+		retString = retContent.join(',\r\n');
+		const file = new Blob([retString], {type: 'text/plain'});
+		const bttn = $('#table-button-1');
+		bttn.attr("href", URL.createObjectURL(file));
+  		bttn.prop("download", "logs_" + new Date().getTime() + ".txt");
+	};
+
+	Logs.prototype.exportTableToExcel = function() {
+		const excelGen = new ExcelGen({
+			'src_id' : 'main-table',
+			'show_header' : true
+		});
+		excelGen.generate();
+	};
+
+	Logs.prototype.validated = function() {
+		var message;
+		if(this.lineNameValue === 'Select Line Name') {
+			message = {
+				status : 0,
+				text : 'EMPTY_FIELD/1'
+			};
+			return message;
+		}
+		if(this.reasonNameValue === 'Select Reason Name') {
+			message = {
+				status : 0,
+				text : 'EMPTY_FIELD/2'
+			};
+			return message;
+		}
+		if(this.familyNameValue === 'Select Family Name') {
+			message = {
+				status : 0,
+				text : 'EMPTY_FIELD/3'
+			};
+			return message;
+		}
+		if($.trim(this.date) === '') {
+			message = {
+				status : 0,
+				text : 'EMPTY_FIELD/4'
+			};
+			return message;
+		}
+		if($.trim(this.frequencyValue) === '') {
+			message = {
+				status : 0,
+				text : 'EMPTY_FIELD/5'
+			};
+			return message;
+		}
+		if(!$.isNumeric(this.frequencyValue)) {
+			message = {
+				status : 0,
+				text : 'INVALID_FIELD/5'
+			};
+			return message;
+		}
+		message = {
+			status : 1,
+			text : 'RESULT_OK'
+		};
+		return message;
+	};
+
+	Date.prototype.getWeek = function() {
+		var d = new Date(Date.UTC(this.getFullYear(), this.getMonth(), this.getDate()));
+		var dayNum = d.getUTCDay() || 7;
+		d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+		var yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+		return Math.ceil((((d - yearStart) / 86400000) + 1)/7)
+	}
+
+	//FUCNTION TO DISPLAY TEXT FLOATING AT THE TOP
+	function displayError(msg) {
+		$('html, body').scrollTop(0);
+		$('#error-container').html(msg);
+		$('#error-container').fadeIn();
+		var timer = setInterval(function() {
+			$('#error-container').fadeOut();
+			clearInterval(timer);
+		}, 3000);
+	};
+
+	function goBack() {
+		window.history.back();
+	};
+
+	$(document).ready(function() {
+		//Get user
+		firebase.auth().onAuthStateChanged(function(user) {
+			if(user) {
+				//User is signed in
+				const logs = new Logs(user);
+				const bttnFetcher = new BttnFetcher(user, logs);
+				const inspector = new Inspector(user);
+				inspector.inspect();
+				//Event Listeners
+				$('#back-button-container').click(function() {
+					goBack();
+				});
+		
+				$('#refresh-button-container').click(function() {
+					logs.initLayout();
+				});
+			}
+			else {
+				//User is not signed in
+				window.location.replace('/signin.html');
+			}
+		});
+
+	});
+</script>
+</head><body>
+	<div id="outer-container" class="container">
+		<div class="loader"></div>
+		<div id="error-container"></div>
+		<div id="header-container" class="container">
+			<header class="container">
+				<div id="header-content" class="container center">
+					<a href="index.html" target="_self">
+						<div class="favicon-container inner-container img-container">
+							<img src="/resources/favicon.png" alt="Nlyse" class="favicon-img">
+						</div>
+					</a>
+					<div id="nav-container" class="inner-container">
+						<div id="nav-container-signin" class="inner-container">
+							<div id="nav-signin" class="container img-container nav-content">
+								<span id="user-display-name"><!-- Script --></span>
+								<img src="/resources/profile_placeholder.png" alt="User" class="profile-placeholder">
+							</div>
+							<div class="dropdown" id="nav-dropdown">
+								<div class="dropdown-attach"></div>
+								<ul class="dropdown-list">
+									<li><a href="/main_account.html"><img src="/resources/settings_icon.png">Account</a></li>
+									<li id="nav-signin-icon"><a href="/signin.html" target="_self"><img src="/resources/profile_placeholder_invert.png">Sign In</a></li>
+									<li id="nav-signout-icon"><img src="/resources/profile_placeholder_invert.png">Sign Out <span id="nav-signout-name"><!--Username--></span></li>
+									<!-- CHANGE SIGN IN TO 'SIGNOUT USERNAME', IF USER SIGNED IN -->
+								</ul>
+							</div>
+						</div>
+					</div>
+					<div class="clearfix"></div>
+				</div>
+			</header>
+		</div>
+		<div id="main-container" class="container">
+			<main class="container">
+				<div id="main-content" class="container">
+					<section id="section-0" class="inner-container">
+						<div id="section-0-content" class="container section-content">
+							<div id="section-0-heading-container" class="container">
+								<h1 class="container">Prodcuts</h1>
+							</div>
+							<div id="section-0-text-container" class="container">
+								<ul id="prodcut-list">
+									<li><a href="/console.html" target="_self"><img src="/resources/console_overview_icon.png">Overview</a></li>
+									<li><a href="/products/realtimecollector/" target="_self" id="inst-product-link"><img src="/resources/realtime_collector_thumbnail_gray.png">Real Time Collector</a></li>
+								</ul>
+							</div>
+						</div>
+					</section>
+					<section id="section-1" class="container">
+						<div id="section-1-content" class="container section-content center">
+							<div id="section-1-heading-container" class="container">
+								<!-- Section heading -->
+							</div>
+							<div class="container flex-container">
+								<!-- Product Starts -->
+								<div id="back-button-container" class="container" title="Back">
+									<img src="resources/backbutton.png" alt="Back" id="back-button">
+								</div>
+								<div id="main-title-container" class="container center">
+									<h2 id="main-title" class="inner-container">Log Entries</h2>
+									<!-- TODO: ADD JQUERY REFRESH FUNCTIONALITY -->
+									<div id="refresh-button-container" class="inner-container" title="Refresh">
+										<img src="resources/refreshicon.png" alt="Refresh" id="refresh-button">
+									</div>
+								</div>
+								<div id="main-table-container" class="container center">
+									<table id="main-table" class="startAppend">
+										<tr><th id="line-name-col">Line Name</th>
+										<th id="reason-name-col">Reason Name</th>
+										<th id="family-name-col">Family Name</th>
+										<th id="date-col">Date</th>
+										<th id="frequency-col">Frequency</th>
+										<th id="total-time-col">Total Time</th></tr>
+										<!-- SAMPLE ROW SYNTAX 
+										<tr class="data-row">
+											<td class="td-line-name">Assembly Line</td><td class="td-reason-name">Cutter</td><td class="td-family-name">ShortStop</td><td class="td-date">25-12-2017</td><td class="td-frequency">2</td><td class="	td-total-time">3.2</td>
+										</tr> -->
+									</table>
+								</div>
+								<div id="table-action" class="container card center">
+									<div id="table-action-1-container" class="inner-container">
+										<a id="table-button-1" type="button">EXPORT TO FILE</a>
+									</div>
+								</div>
+								<div id="add-log-container" class="container center">
+									<div id="add-log-title-container" class="container">
+										<h2 id="add-log-title">Log Entry</h2>
+									</div>
+									<div id="add-log-content-container" class="container card">
+										<div id="add-log-content-1" class="container">
+											<div id="add-log-input-1" class="container">
+												<select id="select-line-name">
+													<option>Select Line Name</option>
+													<!-- <option class="data-option">Assembly Line</option> -->
+												</select>
+											</div>
+											<div id="add-log-input-2" class="container">
+												<select id="select-reason-name">
+													<option>Select Reason Name</option>
+													<!-- <option class="data-option">Cutter</option> -->
+												</select>
+											</div>
+											<div id="add-log-input-3" class="container">
+												<select id="select-family-name">
+													<option>Select Family Name</option>
+													<!-- <option class="data-option">ShortStop</option> -->
+												</select>
+											</div>
+											<div id="add-log-input-4" class="container">
+												<input type="text" name="select-date" id="select-date" placeholder="Date?">
+											</div>
+											<!-- <div id="add-log-input-5" class="container">
+												<input type="text" name="select-time" id="select-time" placeholder="Time?">
+												<button type="button" id="default-time-button">Current</button>
+											</div> -->
+											<div id="add-log-input-6" class="inner-container">
+												<input type="text" name="select-frequency" id="select-frequency" placeholder="Frequency?">
+											</div>
+											<div id="add-log-action-container" class="inner-container action-container">
+												<button id="add-log-button" type="button">Record Log</button>
+											</div>
+										</div>
+									</div>
+								</div>
+								<!-- Product Ends -->
+							</div>
+						</div>
+					</section>
+					<div class="clearfix"></div>
+				</div>
+			</main>
+		</div>
+		<div id="footer-container" class="container">
+			<footer class="container">
+				<div id="footer-content" class="container center">
+					<div id="aboutus-summary" class="inner-container">
+						<h4>About Us</h4>
+						<!-- Write About Us Summary Here -->
+					</div>
+					<div class="contactus-summary inner-container">
+						<h4>Contact Us</h4>
+						<div class="container contact-container">
+							<div class="inner-container img-container contact-icon">
+								<img src="/resources/phone_icon.png" alt="Phone : ">
+							</div>
+							519-757-2531
+						</div>
+						<div class="container contact-container">
+							<div class="inner-container img-container contact-icon">
+								<img src="/resources/mail_icon.png" alt="Email : ">
+							</div>
+							sunil@nlze.com
+						</div>
+						<div class="container contact-container">
+							<div class="inner-container img-container contact-icon">
+								<img src="/resources/home_icon.png" alt="Address : ">
+							</div>
+							43, Coxwell Cres<br>Brantford, ON, N3P1P5<br>Canada.
+						</div>
+					</div>
+					<div class="clearfix"></div>
+					<div id="copyright" class="container">
+						<!-- Copyright display -->
+					</div>
+				</div>
+			</footer>
+		</div>
+	</div>
+</body></html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+								

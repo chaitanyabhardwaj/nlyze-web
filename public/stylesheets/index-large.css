@@ -1,0 +1,13 @@
+
+#main-container { margin-top: 3px; }
+#section-1 { width: 80%; }
+@media screen and (min-width: 1500px) and (max-width: 1699px) {
+	#section-1 { width: 60%; }
+}
+@media screen and (min-width: 1700px) {
+	#section-1 { width: 50%; }
+}
+#temp-ud-img { width: 50px; height: 50px; margin-bottom: 100px; }
+
+
+

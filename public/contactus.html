@@ -1,0 +1,316 @@
+
+<!DOCTYPE html><html lang="en-US" dir="ltr"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" /><title>Contact Us | NLYZE</title><meta name="description" content="" /><meta name="owner" content="Sunil Malhotra"><meta name="author" content="Chaitanya Bhardwaj" /><base href="contactus.html" target="_blank" /><link rel="icon" type="image/x-icon" href="resources/favicon_title.png" /><meta name="robots" content="index, follow">
+<link rel="stylesheet" type="text/css" href="stylesheets/basicstyle.css" />
+<link rel="stylesheet" type="text/css" media="screen and (min-width: 1001px)" href="stylesheets/contactus-large.css" />
+<script src="scripts/jquery-3.2.1.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-functions.js"></script>
+<script src="scripts/main.js"></script>
+<script src="/scripts/inspector.js"></script>
+<script>
+	'use strict';
+
+	//Initialize ContactForm[param]
+	function ContactForm(user) {
+		const inst = this;
+		this.db = firebase.firestore();
+		this.userRef = user;
+		//Shortcuts to dom elements
+		this.formFirstName = $('#fname');
+		this.formLastName = $('#lname');
+		this.formCompanyName = $('#company-name');
+		this.formEmail = $('#email');
+		this.formPhone = $('#phone');
+		this.formMessage = $('#form-msg');
+		//Fill in form fields
+		if(user)
+			this.fillFormFields();
+		//Add event listeners
+		$('#submit-button').click(function() {
+			inst.submitForm();
+		});
+	};
+
+	ContactForm.prototype.fillFormFields = function() {
+		const inst = this;
+		this.db.collection('users').doc(this.userRef.uid).get().then(function(doc) {
+			if(doc.exists) {
+				const data = doc.data();
+				//fill fields with user data
+				inst.formFirstName.val(inst.userRef.displayName);
+				inst.formCompanyName.val(data.comapany_name);
+				inst.formEmail.val(inst.userRef.email);
+				inst.formPhone.val(data.phone);
+			}
+		}).catch(function(error) {
+			console.log(error);
+		});
+	};
+
+	ContactForm.prototype.submitForm = function() {
+		const inst = this;
+		const validate = this.validateForm();
+		if(validate.status) {
+			const sendEmail = firebase.functions().httpsCallable('contactUsSendEmail');
+			sendEmail({
+				firstName : inst.formFirstName.val(),
+				lastName : inst.formLastName.val(),
+				comapanyName : inst.formCompanyName.val(),
+				userEmail : inst.formEmail.val(),
+				userPhone : inst.formPhone.val(),
+				message : inst.formMessage.val()
+			}).then(function(result) {
+				console.log(result);
+			}).catch(function(error) {
+				console.log(error);
+			});
+		}
+		else {
+			displayError(validate.text);
+		}
+	};
+
+	ContactForm.prototype.validateForm = function() {
+		var message;
+		const emptyFieldText = 'PLEASE FILL IN ALL THE FIELDS';
+		if($.trim(this.formMessage.val().length) < 20) {
+			message = {
+				status : 0,
+				text : 'MESSAGE SHOULD HAVE AT LEAST 20 CHARACTERS'
+			};
+			return message;
+		}
+		switch('') {
+			case $.trim(this.formFirstName.val()) : ;
+			case $.trim(this.formEmail.val()) : ;
+			case $.trim(this.formMessage.val()) : ;
+			case $.trim(this.formPhone.val()) :
+				message = {
+					status : 0,
+					text : emptyFieldText
+				}; break;
+			default :
+				message = {
+					status : 1,
+					text : 'RESULT_OK'
+				};
+		}
+		return message;
+	};
+
+	//FUCNTION TO DISPLAY TEXT FLOATING AT THE TOP
+	function displayError(msg) {
+		$('html, body').scrollTop(0);
+		$('#error-container').html(msg);
+		$('#error-container').fadeIn();
+		var timer = setInterval(function() {
+			$('#error-container').fadeOut();
+			clearInterval(timer);
+		}, 3000);
+	};
+
+	$(document).ready(function() {
+		//Get user
+		firebase.auth().onAuthStateChanged(function(user) {
+			if(user) {
+				//User is signed in
+				const inspector = new Inspector(user);
+				inspector.checkDisabled();
+				const contactForm = new ContactForm(user);
+			}
+			else {
+				const contactForm = new ContactForm(null);
+			}
+		});
+	});
+</script>
+</head><body>
+	<div id="outer-container" class="container">
+		<div id="error-container"></div>
+		<div id="header-container" class="container">
+			<header class="container">
+				<div id="header-content" class="container center">
+					<a href="index.html" target="_self">
+						<div class="favicon-container inner-container img-container">
+							<img src="resources/favicon.png" alt="Nlyse" class="favicon-img">
+						</div>
+					</a>
+					<div id="nav-container" class="inner-container">
+						<div id="nav-container-products" class="inner-container nav-content">
+							<div id="nav-products"><a href="products.html" target="_self">Products</a></div>
+							<!-- OPTIONAL DROPDOWN -->
+						</div>
+						<div id="nav-container-aboutus" class="inner-container nav-content">
+							<div id="nav-aboutus"><a href="aboutus.html" target="_self">About Us</a></div>
+							<!-- OPTIONAL DROPDOWN -->
+						</div>
+						<div id="nav-container-support" class="inner-container nav-content">
+							<div id="nav-support"><a href="support.html" target="_self">Support</a></div>
+							<!-- OPTIONAL DROPDOWN -->
+						</div>
+						<div id="nav-container-contactus" class="inner-container nav-content">
+							<div id="nav-contactus"><a href="contactus.html" target="_self">Contact Us</a></div>
+							<!-- OPTIONAL DROPDOWN -->
+						</div>
+						<div id="nav-container-console" class="inner-container nav-content">
+							<div id="nav-console"><a href="console.html">GO TO CONSOLE</a></div>
+							<!-- OPTIONAL DROPDOWN -->
+						</div>
+						<div id="nav-container-signin" class="inner-container">
+							<div id="nav-signin" class="container img-container nav-content">
+								<img src="resources/profile_placeholder.png" alt="User" class="profile-placeholder">
+							</div>
+							<div class="dropdown" id="nav-dropdown">
+								<div class="dropdown-attach"></div>
+								<ul class="dropdown-list">
+									<li><a href="/main_account.html"><img src="/resources/settings_icon.png">Account</a></li>
+									<li id="nav-signin-icon"><a href="/signin.html" target="_self"><img src="/resources/profile_placeholder_invert.png">Sign In</a></li>
+									<li id="nav-signout-icon"><img src="/resources/profile_placeholder_invert.png">Sign Out <span id="nav-signout-name"><!--Username--></span></li>
+								</ul>
+							</div>
+						</div>
+					</div>
+					<div class="clearfix"></div>
+				</div>
+			</header>
+		</div>
+		<div id="main-container" class="container">
+			<main class="container">
+				<div id="main-content" class="container">
+					<section id="section-0" class="container">
+						<div id="section-0-content" class="container section-content center">
+							<div id="section-0-heading-container" class="inner-container">
+								<h1 class="inner-container">Contact Us</h1>
+							</div>
+							<div class="container img-container">
+								<img src="resources/section_0.png" alt="Image1" id="section-0-img">
+							</div>
+							<div id="section-0-text-container" class="container">
+								<!-- Write Text Here -->
+							</div>
+						</div>
+					</section>
+					<section id="section-3" class="container">
+						<div id="section-3-content" class="container section-content">
+							<div id="section-3-heading-container" class="container">
+								<p>Welcome to <img src="resources/favicon_title.png" alt="NLYZE"> Support</p>
+								<span id="section-3-heading-lighter">We're here to help.</span>
+							</div>
+						</div>
+					</section>
+					<section id="section-1" class="inner-container">
+						<div id="section-1-content" class="container section-content form-container">
+							<div class="inner-container input-container">
+								<input type="text" id="fname" placeholder="First Name">
+							</div>
+							<div class="inner-container input-container">
+								<input type="text" id="lname" placeholder="Last Name">
+							</div>
+							<div class="clearfix"></div>
+							<div class="container input-container">
+								<input type="text" id="company-name" placeholder="Company">
+							</div>
+							<div class="inner-container input-container">
+								<input type="email" id="email" placeholder="Email">
+							</div>
+							<div class="inner-container input-container">
+								<input type="text" id="phone" placeholder="Phone Number">
+							</div>
+							<div class="clearfix"></div>
+							<div class="container input-container">
+								<textarea name="message" id="form-msg" placeholder="Message..."></textarea>
+							</div>
+							<div class="container">
+								<button type="button" id="submit-button">SUBMIT</button>
+							</div>
+						</div>
+					</section>
+					<section id="section-2" class="inner-container">
+						<div id="section-2-content" class="container section-content">
+							<div class="contactus-summary container">
+								<div class="container contact-container">
+									<div class="container">
+										<h3>Phone</h3>
+									</div>
+									519-757-2531
+								</div>
+								<div class="container contact-container">
+									<div class="container">
+										<h3>Email</h3>
+									</div>
+									sunil@nlyze.com
+								</div>
+								<div class="container contact-container">
+									<div class="container">
+										<h3>Address</h3>
+									</div>
+									43, Coxwell Cres Brantford, ON, N3P1P5 Canada.
+								</div>
+							</div>
+						</div>
+					</section>
+					<div class="clearfix"></div>
+				</div>
+			</main>
+		</div>
+		<div id="footer-container" class="container">
+			<footer class="container">
+				<div id="footer-content" class="container center">
+					<div id="aboutus-summary" class="inner-container">
+						<h4>About Us</h4>
+						<!-- Write About Us Summary Here -->
+					</div>
+					<div class="contactus-summary inner-container">
+						<h4>Contact Us</h4>
+						<div class="container contact-container">
+							<div class="inner-container img-container contact-icon">
+								<img src="resources/phone_icon.png" alt="Phone : ">
+							</div>
+							519-757-2531
+						</div>
+						<div class="container contact-container">
+							<div class="inner-container img-container contact-icon">
+								<img src="resources/mail_icon.png" alt="Email : ">
+							</div>
+							sunil@nlyze.com
+						</div>
+						<div class="container contact-container">
+							<div class="inner-container img-container contact-icon">
+								<img src="resources/home_icon.png" alt="Address : ">
+							</div>
+							43, Coxwell Cres<br>Brantford, ON, N3P1P5<br>Canada.
+						</div>
+					</div>
+					<div class="clearfix"></div>
+					<div id="copyright" class="container">
+						<!-- Copyright display -->
+					</div>
+				</div>
+			</footer>
+		</div>
+	</div>
+</body></html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

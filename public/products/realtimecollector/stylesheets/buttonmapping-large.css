@@ -1,0 +1,7 @@
+#edit-mapping-title-container { margin-top: 20px; margin-bottom: 20px; }
+#main-table-container { width: 80%; }
+.settings-container { float: right; margin-right: 40px; padding: 5px; background-color: rgb(247,247,249); border: 1px solid #c7c7c7; border-radius: 7px; }
+.settings-container a { color: #333; font-weight: bolder; width: 100%; }
+.settings-container a img { display: inline-block; width: 25px; height: 25px; vertical-align: middle; }
+#add-button-title-container { margin-top: 20px; margin-bottom: 20px; }
+#warning-icon { display: none; }

@@ -1,0 +1,7 @@
+#add-log-title-container { margin-bottom: 20px; }
+#main-table-container { width: 80%; }
+#table-action { margin-top: 20px; margin-bottom: 50px; width: 40%; cursor: pointer; }
+#frequency-col, #total-time-col { width: 10%; }
+#table-action-1-container { width: 100%; text-align: center; background-color: #1daeeb; }
+#table-button-1 { width: 250px; color: #fff; }
+#add-log-input-5 { position: relative; }

@@ -1,0 +1,16 @@
+#outer-wrapper { position: fixed; width: 100%; height: 100%; z-index: 9; display: none; background-color: rgba(0,0,0,0.7); }
+#report-gen-title { margin-bottom: 20px; }
+#report-gen-action-container { margin-top: 45px; }
+.switch-report-container { float: right; margin-right: 40px; background-color: rgb(247,247,249); border: 1px solid #c7c7c7; border-radius: 7px; padding: 5px 10px; }
+.switch-report-container a { color: #1daeeb; font-weight: bolder; }
+#report-gen-button-1, #report-gen-button-2 { width: 150px; }
+#report-gen-container, #main-table-container { width: 90%; }
+#frequency-col, #total-time-col { width: 15%; }
+#optional-col { display: none; }
+#main-table { margin-top: 20px; }
+#main-chart-container { position: fixed; top: 10%; left: 5%; width: 90%; z-index: 99; -webkit-box-shadow: 0px 0px 3px 3px #a7a7a7; -moz-box-shadow: 0px 0px 3px 3px #a7a7a7; -ms-box-shadow: 0px 0px 3px 3px #a7a7a7; -o-box-shadow: 0px 0px 3px 3px #a7a7a7; box-shadow: 0px 0px 3px 3px #a7a7a7; background-color: #fff; padding: 30px; display: none; }
+#print-button-container { background-color: rgb(247,247,249); border: 1px solid #c7c7c7; border-radius: 7px; padding: 5px; }
+#print-button-container button { color: #1daeeb; font-weight: bolder; background-color: rgb(247,247,249); border: none; width: auto; padding: 0px; font-family: 'Catamaran', sans-serif; }
+#print-button-container img { width: 18px; height: 25px; vertical-align: middle; }
+#floating-close-container { float: right; }
+#floating-close { width: 30px; height: 30px; }

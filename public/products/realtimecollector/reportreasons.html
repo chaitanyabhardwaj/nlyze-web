@@ -1,0 +1,1131 @@
+
+<!--
+	TODO: FILL IN THE BLANKS(META)
+	DESCRIPTION
+	OWNER
+	FAVICON
+	CONVERT HTML TO JSP
+ -->
+ <!--
+ 	.container - block divs
+ 	.inner-container - inline-block divs
+ 	Every section of the page contains 'title' and/or 'content', enclosed within that section's container
+ -->
+<!DOCTYPE html><html lang="en-US" dir="ltr"><head><meta charset="utf-8"><title>Smartdroid Collector</title><meta name="description" content="" ><meta name="owner" content=""><meta name="author" content="Chaitanya Bhardwaj" ><base href="reportreasons.html" target="_blank" ><meta name="referrer" content="origin-when-cross-origin" ><link rel="icon" type="image/x-icon" href="/resources/favicon_title.png">
+<link rel="stylesheet" type="text/css" href="stylesheets/basicstyle.css">
+<link rel="stylesheet" type="text/css" href="stylesheets/reportreasons-large.css">
+<link rel="stylesheet" type="text/css" href="stylesheets/index-large.css">
+<link rel="stylesheet" type="text/css" href="/scripts/jquery-ui-1.12.1.custom/jquery-ui.min.css">
+<meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<script src="/scripts/jquery-3.2.1.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-functions.js"></script>
+<script src="/scripts/main.js"></script>
+<script src="scripts/Chart.bundle.min.js"></script>
+<script src="/scripts/jquery-ui-1.12.1.custom/jquery-ui.min.js"></script>
+<script src="/scripts/productchecker.js"></script>
+<script>
+	'use strict';
+
+	//Initialize ReportByReasons
+	function ReportByReasons(user) {
+		const inst = this;
+		this.userId = user.uid;
+		this.db = firebase.firestore();
+		//check user account type and modify userId is account is 'user-type'
+		this.checkUserAccountType();
+		this.logsRef = this.db.collection('users/' + this.userId + '/products/np001/logs');
+		//Instantiate the layout
+		this.initLayout();
+		//Preload the logs
+		this.loadData();
+		//STATIC COLOR CODE OBJECTS ARRAY
+		this.paintBox = [
+			{r : 230, g : 25, b : 75}, //Red
+			{r : 60, g : 180, b : 75}, //Green
+			{r : 0, g : 130, b : 200}, //Blue
+			{r : 225, g : 225, b : 25}, //Yellow
+			{r : 245, g : 130, b : 48}, //Orange
+			{r : 145, g : 30, b : 180}, //Purple
+			{r : 70, g : 240, b : 240}, //Cyan
+			{r : 210, g : 245, b : 60}, //Lime
+			{r : 240, g : 50, b : 230}, //Magenta
+			{r : 0, g : 128, b : 128}, //Teal
+			{r : 230, g : 190, b : 255}, //Lavender
+			{r : 128, g : 0, b : 0}, //Maroon
+			{r : 0, g : 0, b : 128}, //Navy
+			{r : 255, g : 215, b : 180}, //Coral
+			{r : 128, g : 128, b : 0}, //Olive
+			{r : 170, g : 255, b : 195}, //Mint
+			{r : 170, g : 110, b : 40} //Brown
+		];
+		$('#start-date, #end-date').datepicker({
+   			changeMonth : true,
+    		changeYear : true,
+    		showWeek : true,
+    		dateFormat : 'mm/dd/yy',
+    		firstDay : 1
+    	});
+    	//Getting handle to all the fields
+    	this.outerWrapper = $('#outer-wrapper');
+    	this.reasonName = $('#select-reason');
+		this.familyName = $('#select-family');
+		this.metric = $('#select-metric');
+		this.startDate = $('#start-date');
+		this.endDate = $('#end-date');
+		this.dataGrain = $('#data-grain');
+		this.chartContainer = $('#main-chart-container');
+		//Add event listeners
+    	$('#select-reason, #data-grain').change(function() {
+    		var val = $('#select-reason').find(':selected').val();
+    		if(val === 'Select Reason' || val === 'All Reasons') {
+    			$('#data-grain').val('Daily');
+    		}
+    	});
+		$('#report-gen-button-1').click(function() {
+			inst.fetchFieldValues();
+			inst.genReportData();
+		});
+		$('#report-gen-button-2').click(function() {
+			inst.fetchFieldValues();
+			inst.genReportGraph();
+		});
+		$('#floating-close').click(function() {
+			inst.closeChartContainer();
+		});
+		$('#print-button-container').click(function() {
+			inst.printHardChart();
+		});
+	};
+
+	ReportByReasons.prototype.checkUserAccountType = function() {
+		const inst = this;
+		this.db.collection('users').doc(this.userId).get().then(function(doc) {
+			if(doc.exists) {
+				if(doc.data().account_type === 'user-type') {
+					//get admin userId and re-initialize
+					inst.db.collection('users').get().then(function(querySnapshot) {
+						querySnapshot.forEach(function(doc1) {
+							if(doc1.data().user_email === doc.data().linked_email) {
+								//update userId and logsRef
+								inst.userId = doc1.id;
+								inst.logsRef = inst.db.collection('users/' + inst.userId + '/products/np001/logs');
+								//Instantiate the layout
+								inst.initLayout();
+								//Preload the logs
+								inst.loadData();
+								//remove back button
+								$('#back-button-container').hide();
+							}
+						});
+					});
+				}
+			}
+		}).catch(function(error) {
+			console.log(error);
+		});
+	};
+
+	ReportByReasons.prototype.initLayout = function() {
+		//Clear all fields & data
+		$('input').val('');
+		$('#main-table').find('tr.data-row').remove();
+		$('select').find('option.data-option').remove();
+		//Pull reasons name
+		const reasonsRef = this.db.collection('users/' + this.userId + '/products/np001/reasons');
+		reasonsRef.orderBy('id').get().then(function(querySnapshot) {
+			querySnapshot.forEach(function(doc) {
+				$("<option class='data-option'>").appendTo("select#select-reason").text(doc.data().name);
+			});
+		});
+		//Pull family name
+		const familyRef = this.db.collection('users/' + this.userId + '/products/np001/family');
+		familyRef.orderBy('id').get().then(function(querySnapshot) {
+			querySnapshot.forEach(function(doc) {
+				$("<option class='data-option'>").appendTo("select#select-family").text(doc.data().name);
+			});
+		});
+	};
+
+	ReportByReasons.prototype.loadData = function() {
+		const inst = this; var i = 0;
+		this.query = [];
+		return this.logsRef.orderBy('date').get().then(function(querySnapshot) {
+			querySnapshot.forEach(function(doc) {
+				inst.query[i++] = doc.data();
+			});
+		});
+	};
+
+	ReportByReasons.prototype.fetchFieldValues = function() {
+		this.reasonNameValue = this.reasonName.find(':selected').val();
+		this.familyNameValue = this.familyName.find(':selected').val();
+		this.metricValue = this.metric.find(':selected').val();
+		this.dataGrainValue = this.dataGrain.find(':selected').val();
+		this.startDateValue = this.startDate.val();
+		this.endDateValue = this.endDate.val();
+	};
+
+	ReportByReasons.prototype.genReportData = function() {
+		//Validate input
+		const validate = this.validated();
+		if(validate.status) {
+			const resultSet = this.queryByReasons();
+			console.log(resultSet);
+			if(resultSet === undefined || resultSet.length < 1) {
+				displayError('NO RECORDS FOUND');
+				return;
+			}
+			//else clear table to display new data
+			$('#main-table').find('tr.data-row').remove();
+			$('#optional-col').css('display','none');
+			//sort resultSet
+			/*if(this.metricValue === 'frequency') {
+				//sort desc by frequency
+				//29/03/18 - disable sorting
+				var temp;
+				for(var i = 0; i < resultSet.length - 1; i++) {
+					for(var j = i + 1; j < resultSet.length; j++) {
+						if(resultSet[i].frequency < resultSet[j].frequency) {
+							//swap values
+							temp = resultSet[i];
+							resultSet[i] = resultSet[j];
+							resultSet[j] = temp;
+						}
+					}
+				}
+			}
+			else {
+				//sort desc by totalTime
+				var temp;
+				for(var i = 0; i < resultSet.length - 1; i++) {
+					for(var j = i + 1; j < resultSet.length; j++) {
+						if(resultSet[i].totalTime < resultSet[j].totalTime) {
+							//swap values
+							temp = resultSet[i];
+							resultSet[i] = resultSet[j];
+							resultSet[j] = temp;
+						}
+					}
+				}
+			}*/
+			//display new data
+			if(resultSet[0].optionalCol === undefined) {
+				$.each(resultSet, function(i, set) {
+					$("<tr class='data-row'>").appendTo("table.startAppend")
+		    			.append($("<td class='td-reason-name'>").text(set.reasonName))
+		    			.append($("<td class='td-line-name'>").text(set.lineName))
+		    			.append($("<td class='td-frequency'>").text(set.frequency))
+		    			.append($("<td class='td-total-time'>").text(set.totalTime.toFixed(2)));
+				});
+				return;
+			}
+			$('#optional-col').css('display','table-cell');
+			$.each(resultSet, function(i, set) {
+				$("<tr class='data-row'>").appendTo("table.startAppend")
+			    	.append($("<td class='td-reason-name'>").text(set.reasonName))
+			    	.append($("<td class='td-line-name'>").text(set.lineName))
+			   		.append($("<td class='td-optional-name'>").text(set.optionalCol))
+			   		.append($("<td class='td-frequency'>").text(set.frequency))
+			  		.append($("<td class='td-total-time'>").text(set.totalTime.toFixed(2)));
+			});
+			return;
+		}
+		else if(validate.text === 'EMPTY_FIELD/1' || validate.text === 'EMPTY_FIELD/2' || validate.text === 'EMPTY_FIELD/3' || validate.text === 'EMPTY_FIELD/4' || validate.text === 'EMPTY_FIELD/5') {
+			displayError('PLEASE FILL IN ALL THE FIELDS');
+		}
+		else {
+			displayError('INVALID DATES');
+		}
+	};
+
+	ReportByReasons.prototype.genReportGraph = function() {
+		const inst = this;
+		//Validate input
+		const validate = this.validated();
+		if(validate.status) {
+			const resultSet = this.queryByReasons();
+			console.log(resultSet);
+			if(resultSet === undefined || resultSet.length < 1) {
+				displayError('NO DATA FOUND');
+				return;
+			}
+			//display new data
+			this.outerWrapper.show();
+			this.chartContainer.slideDown(200);
+			var flag1, flag2, freqArr, dataObj, dataObjArr = [], labels = [];
+			if(resultSet[0].optionalCol === undefined) {
+				var linesArr = [], reasonsArr = [], lineCounter = 0, reasonCounter = 0;
+				//store lineNames and reasonNames in two diff arrays
+				$.each(resultSet, function(i, set) {
+					flag1 = flag2 = 1;
+					for(var j = 0; j < linesArr.length; j++) {
+						if(linesArr[j] === set.lineName) {
+							flag1 = 0;
+							break;
+						}
+					}
+					for(var j = 0; j < reasonsArr.length; j++) {
+						if(reasonsArr[j] === set.reasonName) {
+							flag2 = 0;
+							break;
+						}
+					}
+					if(flag1)
+						linesArr[lineCounter++] = set.lineName;
+					if(flag2)
+						reasonsArr[reasonCounter++] = set.reasonName;
+				});
+				for(var i = 0; i < linesArr.length; i++) {
+    				freqArr = new Array(linesArr.length).fill(0);
+    				for(var j = 0; j < reasonsArr.length; j++) {
+    					$.each(resultSet, function(k, set) {
+    						if(set.lineName === linesArr[i] && set.reasonName === reasonsArr[j]) {
+    							if(inst.metricValue === "frequency")
+    								freqArr[j] = set.frequency;
+    							else
+    								freqArr[j] = set.totalTime.toFixed(2);
+    						}
+    					});
+    				}
+    				dataObj = {
+    					type : "bar",
+    					label : linesArr[i],
+    					backgroundColor : "rgba(" + this.paintBox[i].r + "," + this.paintBox[i].g + "," + this.paintBox[i].b + ",0.9)",
+	    				borderColor : "black",
+	    				data : freqArr
+    				};
+    				dataObjArr[i] = dataObj;
+   				}
+    			labels = reasonsArr;
+			}
+			else {
+				var optionalArr = [], linesArr = [], optionalCounter = 0, lineCounter = 0;
+				//store optionalData and lineNames in two diff arrays
+				$.each(resultSet, function(i, set) {
+					flag1 = flag2 = 1;
+					for(var j = 0; j < optionalArr.length; j++) {
+						if(optionalArr[j] === set.optionalCol) {
+							flag1 = 0;
+							break;
+						}
+					}
+					for(var j = 0; j < linesArr.length; j++) {
+						if(linesArr[j] === set.lineName) {
+							flag2 = 0;
+							break;
+						}
+					}
+					if(flag1)
+						optionalArr[optionalCounter++] = set.optionalCol;
+					if(flag2)
+						linesArr[lineCounter++] = set.lineName;
+				});
+				for(var i = 0; i < linesArr.length; i++) {
+    				freqArr = new Array(linesArr.length).fill(0);
+    				for(var j = 0; j < optionalArr.length; j++) {
+    					$.each(resultSet, function(k, set) {
+    						if(set.optionalCol === optionalArr[j] && set.lineName === linesArr[i]) {
+    							if(inst.metricValue === "frequency")
+    								freqArr[j] = set.frequency;
+    							else
+    								freqArr[j] = set.totalTime.toFixed(2);
+    						}
+    					});
+    				}
+    				dataObj = {
+    					type : "bar",
+    					label : linesArr[i],
+    					backgroundColor : "rgba(" + this.paintBox[i].r + "," + this.paintBox[i].g + "," + this.paintBox[i].b + ",0.9)",
+	    				borderColor : "black",
+	    				data : freqArr
+    				};
+    				dataObjArr[i] = dataObj;
+    			}
+    			labels = optionalArr;
+			}
+			var canvas = document.getElementById('mychart');
+	    	canvas.remove() //TO CLEAR THE CANVAS
+	   		$("<canvas id='mychart'>").appendTo("#main-chart");
+	  		canvas = document.getElementById('mychart');
+	    	var ctx = canvas.getContext('2d');
+	   		var chart = new Chart(ctx, {
+	   			type : 'bar',
+	 			data : {
+	    			labels : labels,
+	  				datasets : dataObjArr
+	    		},
+	    			options : {
+	    				scales : {
+	    				xAxes : [{
+	    					stacked : true
+	   					}],
+	   					yAxes : [{
+	   						stacked : true
+	   					}]
+	   				}
+    			}
+	   		});
+		}
+		else if(validate.text === 'EMPTY_FIELD/1' || validate.text === 'EMPTY_FIELD/2' || validate.text === 'EMPTY_FIELD/3' || validate.text === 'EMPTY_FIELD/4' || validate.text === 'EMPTY_FIELD/5') {
+			displayError('PLEASE FILL IN ALL THE FIELDS');
+		}
+		else {
+			displayError('INVALID DATES');
+		}
+	};
+
+	ReportByReasons.prototype.closeChartContainer = function() {
+		this.chartContainer.slideUp(200);
+		this.outerWrapper.hide();
+	};
+
+	ReportByReasons.prototype.printHardChart = function() {
+		const dataUrl = $('#mychart')[0].toDataURL();
+		var windowContent = '<!DOCTYPE html>';
+		windowContent += '<html>'
+		windowContent += '<head><title>Print Chart</title></head>';
+    	windowContent += '<body>'
+    	windowContent += '<img src="' + dataUrl + '" width="900">';
+    	windowContent += '</body>';
+    	windowContent += '</html>';
+    	const printWin = window.open('','PRINT','width=1000, height=550' + this.chartContainer.innerHeight());
+    	printWin.document.open();
+    	printWin.document.write(windowContent);
+    	printWin.document.addEventListener('load', function() {
+    		printWin.focus();
+    		printWin.print();
+    		printWin.document.close();
+    		printWin.close();
+    	}, true);
+	};
+
+	ReportByReasons.prototype.queryByReasons = function() {
+		const inst = this;
+		var groupStr, flag, resultSet = [], i, sumFreq, sumTime, counter = 0;
+		const startRange = this.getDateIndex((new Date(this.startDateValue).getTime())/1000);
+		const endRange = this.getDateIndex((new Date(this.endDateValue).getTime())/1000);
+		//handling dates out of range
+		if(endRange.outOfRange) {
+			if(endRange.rangeValue) {
+				if(startRange.outOfRange && startRange.rangeValue) {
+					//no data to return
+					return;
+				}
+			}
+			else {
+				if(startRange.outOfRange && (!startRange.rangeValue)) {
+					//no data to return
+					return;
+				}
+			}
+		}
+		//filter data
+		//All Reasons
+		if(this.reasonNameValue === 'All Reasons') {
+			//All Families
+			if(this.familyNameValue === 'All Families') {
+				//sum(freq), sum(totalT)
+				//group by reasonName, lineName
+				for(i = startRange.pointer; i <= endRange.pointer; i++) {
+					groupStr = this.query[i].reasonName + this.query[i].lineName;
+					flag = 1;
+					for(var j = 0; j < resultSet.length; j++) {
+						if((resultSet[j].reasonName + resultSet[j].lineName) === groupStr) {
+							flag = 0;
+							break;
+						}
+					}
+					if(flag) {
+						sumFreq = this.query[i].frequency;
+						sumTime = this.query[i].totalTime;
+						for(var k = i + 1; k <= endRange.pointer; k++) {
+							if(groupStr === (this.query[k].reasonName + this.query[k].lineName)) {
+								sumFreq += this.query[k].frequency;
+								sumTime += this.query[k].totalTime;
+							}
+						}
+						resultSet[counter++] = {
+							lineName : inst.query[i].lineName,
+							reasonName : inst.query[i].reasonName,
+							frequency : sumFreq,
+							totalTime : sumTime,
+						};
+					}
+				}
+			}
+			//Single Family
+			else {
+				//sum(freq), sum(totalT)
+				//group by reasonName, lineName
+				for(i = startRange.pointer; i <= endRange.pointer; i++) {
+					if(this.query[i].familyName === this.familyNameValue) {
+						groupStr = this.query[i].reasonName + this.query[i].lineName;
+						flag = 1;
+						for(var j = 0; j < resultSet.length; j++) {
+							if((resultSet[j].reasonName + resultSet[j].lineName) === groupStr) {
+								flag = 0;
+								break;
+							}
+						}
+						if(flag) {
+							sumFreq = this.query[i].frequency;
+							sumTime = this.query[i].totalTime;
+							for(var k = i + 1; k <= endRange.pointer; k++) {
+								if(groupStr === (this.query[k].reasonName + this.query[k].lineName)) {
+									sumFreq += this.query[k].frequency;
+									sumTime += this.query[k].totalTime;
+								}
+							}
+							resultSet[counter++] = {
+								lineName : inst.query[i].lineName,
+								reasonName : inst.query[i].reasonName,
+								frequency : sumFreq,
+								totalTime : sumTime
+							};
+						}
+					}
+				}
+			}
+		}
+		//Single Reason
+		else {
+			//All Families
+			if(this.familyNameValue === 'All Families') {
+				switch(this.dataGrainValue) {
+					//data grain : daily
+					case 'Daily' : 
+					var forDate1, dateStr1, forDate2, dateStr2;
+					for(i = startRange.pointer; i <= endRange.pointer; i++) {
+						if(this.query[i].reasonName === this.reasonNameValue) {
+							forDate1 = new Date(this.query[i].date * 1000);
+							dateStr1 = forDate1.getDate() + '/' + (forDate1.getMonth() + 1) + '/' + forDate1.getFullYear();
+							groupStr = this.query[i].reasonName + this.query[i].lineName + dateStr1;
+							flag = 1;
+							for(var j = 0; j < resultSet.length; j++) {
+								if((resultSet[j].reasonName + resultSet[j].lineName + resultSet[j].optionalCol) === groupStr) {
+									flag = 0;
+									break;
+								}
+							}
+							if(flag) {
+								sumFreq = this.query[i].frequency;
+								sumTime = this.query[i].totalTime;
+								for(var k = i + 1; k <= endRange.pointer; k++) {
+									forDate2 = new Date(this.query[k].date * 1000);
+									dateStr2 = forDate2.getDate() + '/' + (forDate2.getMonth() + 1) + '/' + forDate2.getFullYear();
+									if(groupStr === (this.query[k].reasonName + this.query[k].lineName + dateStr2)) {
+										sumFreq += this.query[k].frequency;
+										sumTime += this.query[k].totalTime;
+									}
+								}
+								resultSet[counter++] = {
+									lineName : inst.query[i].lineName,
+									reasonName : inst.query[i].reasonName,
+									optionalCol : dateStr1,
+									frequency : sumFreq,
+									totalTime  : sumTime
+								};
+							}
+						}
+					}
+					break;
+					//data grain : weekly
+					case 'Weekly' :
+					var yearWeek1, yearWeek2;
+					for(i = startRange.pointer; i <= endRange.pointer; i++) {
+						if(this.query[i].reasonName === this.reasonNameValue) {
+							yearWeek1 = this.query[i].weekNum + ' - ' + this.query[i].year;
+							groupStr = this.query[i].reasonName + this.query[i].lineName + yearWeek1;
+							flag = 1;
+							for(var j = 0; j < resultSet.length; j++) {
+								if((resultSet[j].reasonName + resultSet[j].lineName + resultSet[j].optionalCol) === groupStr) {
+									flag = 0;
+									break;
+								}
+							}
+							if(flag) {
+								sumFreq = this.query[i].frequency;
+								sumTime = this.query[i].totalTime;
+								for(var k = i + 1; k <= endRange.pointer; k++) {
+									yearWeek2 = this.query[k].weekNum + ' - ' + this.query[k].year;
+									if(groupStr === (this.query[k].reasonName + this.query[k].lineName + yearWeek2)) {
+										sumFreq += this.query[k].frequency;
+										sumTime += this.query[k].totalTime;
+									}
+								}
+								resultSet[counter++] = {
+									lineName : inst.query[i].lineName,
+									reasonName : inst.query[i].reasonName,
+									optionalCol : yearWeek1,
+									frequency : sumFreq,
+									totalTime  : sumTime
+								};
+							}
+						}
+					}
+					break;
+					//data grain : monthly
+					case 'Monthly' :
+					var yearMonth1, yearMonth2;
+					for(i = startRange.pointer; i <= endRange.pointer; i++) {
+						if(this.query[i].reasonName === this.reasonNameValue) {
+							yearMonth1 = this.query[i].monthNum + ' - ' + this.query[i].year;
+							groupStr = this.query[i].reasonName + this.query[i].lineName + yearMonth1;
+							flag = 1;
+							for(var j = 0; j < resultSet.length; j++) {
+								if((resultSet[j].reasonName + resultSet[j].lineName + resultSet[j].optionalCol) === groupStr) {
+									flag = 0;
+									break;
+								}
+							}
+							if(flag) {
+								sumFreq = this.query[i].frequency;
+								sumTime = this.query[i].totalTime;
+								for(var k = i + 1; k <= endRange.pointer; k++) {
+									yearMonth2 = this.query[k].monthNum + ' - ' + this.query[k].year;
+									if(groupStr === (this.query[k].reasonName + this.query[k].lineName + yearMonth2)) {
+										sumFreq += this.query[k].frequency;
+										sumTime += this.query[k].totalTime;
+									}
+								}
+								resultSet[counter++] = {
+									lineName : inst.query[i].lineName,
+									reasonName : inst.query[i].reasonName,
+									optionalCol : yearMonth1,
+									frequency : sumFreq,
+									totalTime  : sumTime
+								};
+							}
+						}
+					}
+					break;
+					//data grain : yearly
+					case 'Yearly' :
+					for(i = startRange.pointer; i <= endRange.pointer; i++) {
+						if(this.query[i].reasonName === this.reasonNameValue) {
+							groupStr = this.query[i].reasonName + this.query[i].lineName + this.query[i].year;
+							flag = 1;
+							for(var j = 0; j < resultSet.length; j++) {
+								if((resultSet[j].reasonName + resultSet[j].lineName + resultSet[j].optionalCol) === groupStr) {
+									flag = 0;
+									break;
+								}
+							}
+							if(flag) {
+								sumFreq = this.query[i].frequency;
+								sumTime = this.query[i].totalTime;
+								for(var k = i + 1; k <= endRange.pointer; k++) {
+									if(groupStr === (this.query[k].reasonName + this.query[k].lineName + this.query[k].year)) {
+										sumFreq += this.query[k].frequency;
+										sumTime += this.query[k].totalTime;
+									}
+								}
+								resultSet[counter++] = {
+									lineName : inst.query[i].lineName,
+									reasonName : inst.query[i].reasonName,
+									optionalCol : inst.query[i].year,
+									frequency : sumFreq,
+									totalTime  : sumTime
+								};
+							}
+						}
+					}
+					break;
+					default : console.log('Invalid data grain'); displayError('INVALID DATA GRAIN');
+				}
+			}
+			//Single Family
+			else {
+				switch(this.dataGrainValue) {
+					//data grain : daily
+					case 'Daily' : 
+					var forDate1, dateStr1, forDate2, dateStr2;
+					for(i = startRange.pointer; i <= endRange.pointer; i++) {
+						if(this.query[i].reasonName === this.reasonNameValue && this.query[i].familyName === this.familyNameValue) {
+							forDate1 = new Date(this.query[i].date * 1000);
+							dateStr1 = forDate1.getDate() + '/' + (forDate1.getMonth() + 1) + '/' + forDate1.getFullYear();
+							groupStr = this.query[i].reasonName + this.query[i].lineName + dateStr1;
+							flag = 1;
+							for(var j = 0; j < resultSet.length; j++) {
+								if((resultSet[j].reasonName + resultSet[j].lineName + resultSet[j].optionalCol) === groupStr) {
+									flag = 0;
+									break;
+								}
+							}
+							if(flag) {
+								sumFreq = this.query[i].frequency;
+								sumTime = this.query[i].totalTime;
+								for(var k = i + 1; k <= endRange.pointer; k++) {
+									forDate2 = new Date(this.query[k].date * 1000);
+									dateStr2 = forDate2.getDate() + '/' + (forDate2.getMonth() + 1) + '/' + forDate2.getFullYear();
+									if(groupStr === (this.query[k].reasonName + this.query[k].lineName + dateStr2)) {
+										sumFreq += this.query[k].frequency;
+										sumTime += this.query[k].totalTime;
+									}
+								}
+								resultSet[counter++] = {
+									lineName : inst.query[i].lineName,
+									reasonName : inst.query[i].reasonName,
+									optionalCol : dateStr1,
+									frequency : sumFreq,
+									totalTime  : sumTime
+								};
+							}
+						}
+					}
+					break;
+					//data grain : weekly
+					case 'Weekly' :
+					var yearWeek1, yearWeek2;
+					for(i = startRange.pointer; i <= endRange.pointer; i++) {
+						if(this.query[i].reasonName === this.reasonNameValue && this.query[i].familyName === this.familyNameValue) {
+							yearWeek1 = this.query[i].weekNum + ' - ' + this.query[i].year;
+							groupStr = this.query[i].reasonName + this.query[i].lineName + yearWeek1;
+							flag = 1;
+							for(var j = 0; j < resultSet.length; j++) {
+								if((resultSet[j].reasonName + resultSet[j].lineName + resultSet[j].optionalCol) === groupStr) {
+									flag = 0;
+									break;
+								}
+							}
+							if(flag) {
+								sumFreq = this.query[i].frequency;
+								sumTime = this.query[i].totalTime;
+								for(var k = i + 1; k <= endRange.pointer; k++) {
+									yearWeek2 = this.query[k].weekNum + ' - ' + this.query[k].year;
+									if(groupStr === (this.query[k].reasonName + this.query[k].lineName + yearWeek2)) {
+										sumFreq += this.query[k].frequency;
+										sumTime += this.query[k].totalTime;
+									}
+								}
+								resultSet[counter++] = {
+									lineName : inst.query[i].lineName,
+									reasonName : inst.query[i].reasonName,
+									optionalCol : yearWeek1,
+									frequency : sumFreq,
+									totalTime  : sumTime
+								};
+							}
+						}
+					}
+					break;
+					//data grain : monthly
+					case 'Monthly' :
+					var yearMonth1, yearMonth2;
+					for(i = startRange.pointer; i <= endRange.pointer; i++) {
+						if(this.query[i].reasonName === this.reasonNameValue && this.query[i].familyName === this.familyNameValue) {
+							yearMonth1 = this.query[i].monthNum + ' - ' + this.query[i].year;
+							groupStr = this.query[i].reasonName + this.query[i].lineName + yearMonth1;
+							flag = 1;
+							for(var j = 0; j < resultSet.length; j++) {
+								if((resultSet[j].reasonName + resultSet[j].lineName + resultSet[j].optionalCol) === groupStr) {
+									flag = 0;
+									break;
+								}
+							}
+							if(flag) {
+								sumFreq = this.query[i].frequency;
+								sumTime = this.query[i].totalTime;
+								for(var k = i + 1; k <= endRange.pointer; k++) {
+									yearMonth2 = this.query[k].monthNum + ' - ' + this.query[k].year;
+									if(groupStr === (this.query[k].reasonName + this.query[k].lineName + yearMonth2)) {
+										sumFreq += this.query[k].frequency;
+										sumTime += this.query[k].totalTime;
+									}
+								}
+								resultSet[counter++] = {
+									lineName : inst.query[i].lineName,
+									reasonName : inst.query[i].reasonName,
+									optionalCol : yearMonth1,
+									frequency : sumFreq,
+									totalTime  : sumTime
+								};
+							}
+						}
+					}
+					break;
+					//data grain : yearly
+					case 'Yearly' :
+					for(i = startRange.pointer; i <= endRange.pointer; i++) {
+						if(this.query[i].reasonName === this.reasonNameValue && this.query[i].familyName === this.familyNameValue) {
+							groupStr = this.query[i].reasonName + this.query[i].lineName + this.query[i].year;
+							flag = 1;
+							for(var j = 0; j < resultSet.length; j++) {
+								if((resultSet[j].reasonName + resultSet[j].lineName + resultSet[j].optionalCol) === groupStr) {
+									flag = 0;
+									break;
+								}
+							}
+							if(flag) {
+								sumFreq = this.query[i].frequency;
+								sumTime = this.query[i].totalTime;
+								for(var k = i + 1; k <= endRange.pointer; k++) {
+									if(groupStr === (this.query[k].reasonName + this.query[k].lineName + this.query[k].year)) {
+										sumFreq += this.query[k].frequency;
+										sumTime += this.query[k].totalTime;
+									}
+								}
+								resultSet[counter++] = {
+									lineName : inst.query[i].lineName,
+									reasonName : inst.query[i].reasonName,
+									optionalCol : inst.query[i].year,
+									frequency : sumFreq,
+									totalTime  : sumTime
+								};
+							}
+						}
+					}
+					break;
+					default : console.log('Invalid data grain'); displayError('INVALID DATA GRAIN');
+				}
+			}
+		}
+		return resultSet;
+	};
+
+	ReportByReasons.prototype.getDateIndex = function(timestamp) {
+		const queryLength = this.query.length;
+		var l = 0, h = queryLength - 1, m, range;
+		while(l <= h) {
+			m = Math.floor((l + h) / 2);
+			if(this.query[m].date === timestamp) {
+				range = {
+					pointer : m,
+					outOfRange : 0
+				};
+				return range;
+			}
+			else if(this.query[m].date > timestamp) {
+				h = m - 1;
+			}
+			else {
+				l = m + 1;
+			}
+		}
+		//if didn't find actual index
+		if(timestamp > this.query[queryLength - 1].date) { //index out of range
+			range = {
+				pointer : l - 1,
+				outOfRange : 1, //timestamp is out of range
+				rangeValue : 1 //timestamp is bigger
+			};
+			return range;
+		}
+		if(timestamp < this.query[0].date) {
+			range = {
+				pointer : l,
+				outOfRange : 1, //timestamp is out of range
+				rangeValue : 0 //timestamp is smaller
+			};
+			return range;
+		}
+		range = {
+			pointer : l - 1,
+			outOfRange : 0
+		};
+		return range;
+	};
+
+	ReportByReasons.prototype.validated = function() {
+		var message;
+		if(this.reasonNameValue === 'Select Reason') {
+			message = {
+				status : 0,
+				text : 'EMPTY_FIELD/1'
+			};
+			return message;
+		}
+		if(this.familyNameValue === 'Select Family') {
+			message = {
+				status : 0,
+				text : 'EMPTY_FIELD/2'
+			};
+			return message;
+		}
+		if(this.metricValue === 'Select Metric') {
+			message = {
+				status : 0,
+				text : 'EMPTY_FIELD/3'
+			};
+			return message;
+		}
+		if($.trim(this.startDateValue) === '') {
+			message = {
+				status : 0,
+				text : 'EMPTY_FIELD/4'
+			}
+		}
+		if($.trim(this.endDateValue) === '') {
+			message = {
+				status : 0,
+				text : 'EMPTY_FIELD/5'
+			};
+			return message;
+		}
+		if(this.startDateValue > this.endDateValue) {
+			message = {
+				status : 0,
+				text : 'INVALID_DATES'
+			};
+			return message;
+		}
+		message = {
+			status : 1,
+			text : 'RESULT_OK'
+		};
+		return message;
+	};
+
+	//FUCNTION TO DISPLAY TEXT FLOATING AT THE TOP
+	function displayError(msg) {
+		$('html, body').scrollTop(0);
+		$('#error-container').html(msg);
+		$('#error-container').fadeIn();
+		var timer = setInterval(function() {
+			$('#error-container').fadeOut();
+			clearInterval(timer);
+		}, 3000);
+	};
+
+	function goBack() {
+		//window.history.back();
+		window.location.replace('/products/realtimecollector/');
+	};
+
+	$(document).ready(function() {
+		//Get user
+		firebase.auth().onAuthStateChanged(function(user) {
+			if(user) {
+				//User is signed in
+				const reportByReasons = new ReportByReasons(user);
+				//Event Listeners
+				$('#back-button-container').click(function() {
+					goBack();
+				});
+		
+				$('#refresh-button-container').click(function() {
+					reportByReasons.initLayout();
+				});
+			}
+			else {
+				//User is not signed in
+				window.location.replace('/signin.html');
+			}
+		});
+
+	});
+</script>
+</head><body>
+	<div id="outer-wrapper"></div>
+	<div id="main-chart-container" class="container">
+		<div id="print-button-container" class="inner-container">
+			<img src="/resources/console_overview_icon.png"><button type="button">Print</button>
+		</div>
+		<div id='floating-close-container' class="inner-container">
+			<img src="/resources/black_cross.png" alt="Close" id="floating-close">
+		</div>
+		<div class="clearfix"></div>
+		<div id="main-chart-title-container" class="container">
+			<div id="main-chart" class="container">
+				<canvas id="mychart"></canvas>
+			</div>
+		</div>
+	</div>
+	<div id="outer-container" class="container">
+		<div id="error-container"></div>
+		<div id="header-container" class="container">
+			<header class="container">
+				<div id="header-content" class="container center">
+					<a href="index.html" target="_self">
+						<div class="favicon-container inner-container img-container">
+							<img src="/resources/favicon.png" alt="Nlyse" class="favicon-img">
+						</div>
+					</a>
+					<div id="nav-container" class="inner-container">
+						<div id="nav-container-signin" class="inner-container">
+							<div id="nav-signin" class="container img-container nav-content">
+								<span id="user-display-name"><!-- Script --></span>
+								<img src="/resources/profile_placeholder.png" alt="User" class="profile-placeholder">
+							</div>
+							<div class="dropdown" id="nav-dropdown">
+								<div class="dropdown-attach"></div>
+								<ul class="dropdown-list">
+									<li><a href="/main_account.html"><img src="/resources/settings_icon.png">Account</a></li>
+									<li id="nav-signin-icon"><a href="/signin.html" target="_self"><img src="/resources/profile_placeholder_invert.png">Sign In</a></li>
+									<li id="nav-signout-icon"><img src="/resources/profile_placeholder_invert.png">Sign Out <span id="nav-signout-name"><!--Username--></span></li>
+									<!-- CHANGE SIGN IN TO 'SIGNOUT USERNAME', IF USER SIGNED IN -->
+								</ul>
+							</div>
+						</div>
+					</div>
+					<div class="clearfix"></div>
+				</div>
+			</header>
+		</div>
+		<div id="main-container" class="container">
+			<main class="container">
+				<div id="main-content" class="container">
+					<section id="section-0" class="inner-container">
+						<div id="section-0-content" class="container section-content">
+							<div id="section-0-heading-container" class="container">
+								<h1 class="container">Prodcuts</h1>
+							</div>
+							<div id="section-0-text-container" class="container">
+								<ul id="prodcut-list">
+									<li><a href="/console.html" target="_self"><img src="/resources/console_overview_icon.png">Overview</a></li>
+									<li><a href="/products/realtimecollector/" target="_self"><img src="/resources/realtime_collector_thumbnail_gray.png">Real Time Collector</a></li>
+								</ul>
+							</div>
+						</div>
+					</section>
+					<section id="section-1" class="container">
+						<div id="section-1-content" class="container section-content center">
+							<div id="section-1-heading-container" class="container">
+								<!-- Section heading -->
+							</div>
+							<div class="container">
+								<!-- Product Starts -->
+								<div id="back-button-container" class="inner-container" title="Back">
+									<img src="resources/backbutton.png" alt="Back" id="back-button">
+								</div>
+								<div class="switch-report-container inner-container" title="Switch">
+									<a href="/products/realtimecollector/reportlines.html" target="_self">By Lines</a>
+								</div>
+								<div id="main-title-container" class="container center">
+									<h2 id="main-title" class="inner-container">Report by reasons</h2>
+								</div>
+								<div id="report-gen-container" class="container center">
+									<div id="report-gen-title-container" class="container">
+										<h2 id="report-gen-title">Report Generator</h2>
+									</div>
+									<div id="report-gen-content-container" class="container card">
+										<div id="report-gen-content-container-1" class="inner-container">
+											<div id="report-gen-input-1" class="container">
+												<select id="select-reason">
+													<option>Select Reason</option>
+													<option>All Reasons</option>
+													<!-- Fetch From Database -->
+												</select>
+											</div>
+											<div id="report-gen-input-2" class="container">
+												<select id="select-family">
+													<option>Select Family</option>
+													<option>All Families</option>
+													<!-- Fetch From Database -->
+												</select>
+											</div>
+											<div id="report-gen-input-3" class="container">
+												<select id="select-metric">
+													<option>Select Metric</option>
+													<option value="frequency">Frequency</option>
+													<option value="totalTime">Total Time</option>
+												</select>
+											</div>
+										</div>
+										<div id="report-gen-content-container-2" class="inner-container">
+											<div id="report-gen-input-4" class="container">
+												<input type="text" name="start-date" id="start-date" placeholder="Start Date?">
+											</div>
+											<div id="report-gen-input-5" class="container">
+												<input type="text" name="end-date" id="end-date" placeholder="End Date?">
+											</div>
+											<div id="report-gen-input-6" class="container">
+												<select id="data-grain" >
+													<option>Daily</option>
+													<option>Weekly</option>
+													<option>Monthly</option>
+													<option>Yearly</option>
+												</select>
+											</div>
+										</div>
+										<div id="report-gen-action-container" class="inner-container action-container">
+											<div id="report-gen-action-1" class="container">
+												<button id="report-gen-button-1" type="button">Fetch Data</button>
+											</div>
+											<div id="report-gen-action-2" class="container">
+												<button id="report-gen-button-2" type="button">Fetch Graph</button>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div id="main-table-container" class="container center">
+									<table id="main-table" class="startAppend">
+										<tr><th id="reason-name-col">Reason Name</th>
+										<th id="line-name-col">Line Name</th>
+										<th id="optional-col">Date</th>
+										<th id="frequency-col">Frequency</th>
+										<th id="total-time-col">Total Time</th></tr>
+										<!--<tr class="data-row">
+											<td class="td-line-name">Assembly Line</td><td class="td-reason-name">Cutter</td><td class="td-frequency">2</td><td class="td-total-time">3.2</td>
+										</tr> -->
+									</table>
+								</div>
+								<!-- Product Ends -->
+							</div>
+						</div>
+					</section>
+					<div class="clearfix"></div>
+				</div>
+			</main>
+		</div>
+		<div id="footer-container" class="container">
+			<footer class="container">
+				<div id="footer-content" class="container center">
+					<div id="aboutus-summary" class="inner-container">
+						<h4>About Us</h4>
+						<!-- Write About Us Summary Here -->
+					</div>
+					<div class="contactus-summary inner-container">
+						<h4>Contact Us</h4>
+						<div class="container contact-container">
+							<div class="inner-container img-container contact-icon">
+								<img src="/resources/phone_icon.png" alt="Phone : ">
+							</div>
+							519-757-2531
+						</div>
+						<div class="container contact-container">
+							<div class="inner-container img-container contact-icon">
+								<img src="/resources/mail_icon.png" alt="Email : ">
+							</div>
+							sunil@nlze.com
+						</div>
+						<div class="container contact-container">
+							<div class="inner-container img-container contact-icon">
+								<img src="/resources/home_icon.png" alt="Address : ">
+							</div>
+							43, Coxwell Cres<br>Brantford, ON, N3P1P5<br>Canada.
+						</div>
+					</div>
+					<div class="clearfix"></div>
+					<div id="copyright" class="container">
+						<!-- Copyright display -->
+					</div>
+				</div>
+			</footer>
+		</div>
+	</div>
+</body></html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+								

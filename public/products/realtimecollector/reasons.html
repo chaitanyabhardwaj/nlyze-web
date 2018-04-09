@@ -1,0 +1,476 @@
+
+<!--
+	TODO: FILL IN THE BLANKS(META)
+	DESCRIPTION
+	OWNER
+	FAVICON
+
+	CONVERT HTML TO JSP
+ -->
+ <!--
+ 	.container - block divs
+ 	.inner-container - inline-block divs
+ 	Every section of the page contains 'title' and/or 'content', enclosed within that section's container
+ -->
+<!DOCTYPE html><html lang="en-US" dir="ltr"><head><meta charset="utf-8"><title>Smartdroid Collector</title><meta name="description" content="" ><meta name="owner" content=""><meta name="author" content="Chaitanya Bhardwaj" ><base href="lines.html" target="_self" ><meta name="referrer" content="origin-when-cross-origin" ><link rel="icon" type="image/x-icon" href="/resources/favicon_title.png">
+<link rel="stylesheet" type="text/css" href="stylesheets/basicstyle.css">
+<link rel="stylesheet" type="text/css" href="stylesheets/lines-large.css">
+<link rel="stylesheet" type="text/css" href="stylesheets/index-large.css">
+<meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<script src="/scripts/jquery-3.2.1.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-functions.js"></script>
+<script src="/scripts/main.js"></script>
+<script src="/scripts/productchecker.js"></script>
+<script src="/scripts/inspector.js"></script>
+<script>
+	'use strict';
+
+	//Initialize Reasons
+	function Reasons(user) {
+		const inst = this;
+		this.userRef = user;
+		this.db = firebase.firestore();
+		this.reasonRef = this.db.collection('users/' + user.uid + '/products/np001/reasons');
+		//Instantiate the layout
+		this.initLayout();
+		//shortcuts to dom elements
+		this.reasonNameAdd = $('#add-reason-name');
+		this.reasonTimeAdd = $('#add-reason-time');
+		this.reasonId = $('#edit-reason-id');
+		this.reasonNameEdit = $('#edit-reason-name');
+		this.reasonTimeEdit = $('#edit-reason-time');
+		//Add event listeners
+		$('#add-reason-button').click(function() {
+			inst.fetchAddValues();
+			inst.addReasonEventListener();
+		});
+		$('#edit-reason-button').click(function() {
+			inst.fetchEditValues();
+			inst.editReasonEventListener();
+		});
+		$('#edit-reason-id').change(function() {
+			inst.updateEditValues();
+		});
+	};
+
+	Reasons.prototype.initLayout = function() {
+		//Clear all fields & data
+		$('#add-reason-name').val('');
+		$('#add-reason-time').val('');
+		$('#edit-reason-name').val('');
+		$('#edit-reason-time').val('');
+		$('#main-table').find('tr.data-row').remove();
+		$('select').find('option.data-option').remove();
+		//Adding reason to the table
+		this.reasonRef.orderBy('id').get().then(function(querySnapshot) {
+			querySnapshot.forEach(function(doc) {
+				$("<tr class='data-row'>").appendTo("table.startAppend")
+					.append($("<td class='td-id'>").text(doc.data().id))
+					.append($("<td class='td-name'>").text(doc.data().name))
+					.append($("<td class='td-time'>").text(doc.data().time));
+				$("<option class='data-option'>").appendTo("#edit-reason-id").text(doc.data().id);
+			});
+		});
+	};
+
+	Reasons.prototype.addReasonEventListener = function() {
+		const inst = this;
+		//Get table row count
+		const rowCount = $('#main-table tr.data-row').length;
+		const validate = this.addValidated();
+		if(validate.status) {
+			//Check duplicate
+			this.reasonRef.doc(this.reasonNameAddValue).get().then(function(doc) {
+				if(!doc.exists) {
+					//Add reason to firestore
+					inst.reasonRef.doc(inst.reasonNameAddValue).set({
+						name : inst.reasonNameAddValue,
+						id : (rowCount + 1),
+						time : parseFloat(inst.reasonTimeAddValue)
+					}).then(function() {
+						//reason added
+						displayError(inst.reasonNameAddValue + " ADDED SUCCESFULLY");
+						inst.initLayout();
+					}).catch(function(error) {
+						console.log(error);
+					});
+				}
+				else
+					displayError('DUPLICATE REASON');
+			}).catch(function(error) {
+				console.log(error);
+			});
+		}
+		else if(validate.text === 'EMPTY_FIELD/1' || validate.text === 'EMPTY_FIELD/2') {
+			displayError('PLEASE FILL IN ALL THE FIELDS');
+		}
+		else {
+			displayError('INVALID TIME INTERVAL');
+		}
+	};
+
+	Reasons.prototype.editReasonEventListener = function() {
+		const inst = this;
+		const validate = this.editValidated();
+		if(validate.status) {
+			//Check duplicate
+			this.reasonRef.doc(this.reasonNameEditValue).get().then(function(doc) {
+				if(doc.exists) {
+					if(doc.data().id === inst.reasonIdValue) {
+						displayError('ALREADY EXISTS');
+						return;
+					}
+					displayError('DUPLICATE REASON');
+					return;
+				}
+				//Edit Reason
+				const reasonNameOld = $('#main-table tr.data-row').eq(inst.reasonIdValue - 1).find('td.td-name').text();
+				inst.reasonRef.doc(reasonNameOld).get().then(function(doc1) {
+					if(doc1.exists) {
+						//Delete doc
+						inst.reasonRef.doc(reasonNameOld).delete().then(function() {
+							//Add new reason name
+							inst.reasonRef.doc(inst.reasonNameEditValue).set({
+								name : inst.reasonNameEditValue,
+								id : parseInt(inst.reasonIdValue),
+								time : parseFloat(inst.reasonTimeEditValue)
+							}).then(function() {
+								//reason added
+								displayError("REASON NAME CHANGED SUCCESFULLY");
+								inst.initLayout();
+							}).catch(function(error) {
+								console.log(error);
+							});
+						}).catch(function(error) {
+							console.log(error);
+						});
+					}
+					else console.log("DOC NOT FOUND");
+				});
+			});
+		}
+		else if(validate.text === 'EMPTY_FIELD/1' || validate.text === 'EMPTY_FIELD/2') {
+			displayError('PLEASE FILL IN ALL THE FIELDS');
+		}
+		else {
+			displayError('INVALID TIME INTERVAL');
+		}
+	};
+
+	Reasons.prototype.updateEditValues = function() {
+		const inst = this;
+		const reasonIdV = this.reasonId.val();
+		this.reasonRef.get().then(function(querySnapshot) {
+			querySnapshot.forEach(function(doc) {
+				if(doc.data().id === parseInt(reasonIdV)) {
+					inst.reasonNameEdit.val(doc.data().name);
+					inst.reasonTimeEdit.val(doc.data().time);
+				}
+			});
+		}).catch(function(error) {
+			console.log(error);
+		});
+	};
+
+	Reasons.prototype.fetchAddValues = function() {
+		this.reasonNameAddValue = this.reasonNameAdd.val();
+		this.reasonTimeAddValue = this.reasonTimeAdd.val();
+	};
+
+	Reasons.prototype.fetchEditValues = function() {
+		this.reasonIdValue = this.reasonId.val();
+		this.reasonNameEditValue = this.reasonNameEdit.val();
+		this.reasonTimeEditValue = this.reasonTimeEdit.val();
+	};
+
+	Reasons.prototype.addValidated = function() {
+		var message;
+		if($.trim(this.reasonNameAddValue) === '') {
+			message = {
+				status : 0,
+				text : 'EMPTY_FIELD/1'
+			};
+			return message;
+		}
+		if($.trim(this.reasonTimeAddValue) === '') {
+			message = {
+				status : 0,
+				text : 'EMPTY_FIELD/2'
+			};
+			return message;
+		}
+		if(!$.isNumeric(this.reasonTimeAddValue)) {
+			message = {
+				status : 0,
+				text : 'INVALID_FIELD/2'
+			};
+			return message;
+		}
+		message = {
+			status : 1,
+			text : 'RESULT_OK'
+		};
+		return message;
+	};
+
+	Reasons.prototype.editValidated = function() {
+		var message;
+		if(this.reasonIdValue === 'Select Reason ID') {
+			message = {
+				status : 0,
+				text : 'EMPTY_FIELD/3'
+			};
+			return message;
+		}
+		if($.trim(this.reasonNameEditValue) === '') {
+			message = {
+				status : 0,
+				text : 'EMPTY_FIELD/4'
+			};
+			return message;
+		}
+		if($.trim(this.reasonTimeEditValue) === '') {
+			message = {
+				status : 0,
+				text : 'EMPTY_FIELD/5'
+			};
+			return message;
+		}
+		if(!$.isNumeric(this.reasonTimeEditValue)) {
+			message = {
+				status : 0,
+				text : 'INVALID_FIELD/5'
+			};
+			return message;
+		}
+		message = {
+			status : 1,
+			text : 'RESULT_OK'
+		};
+		return message;
+	};
+
+	//FUCNTION TO DISPLAY TEXT FLOATING AT THE TOP
+	function displayError(msg) {
+		$('html, body').scrollTop(0);
+		$('#error-container').html(msg);
+		$('#error-container').fadeIn();
+		var timer = setInterval(function() {
+			$('#error-container').fadeOut();
+			clearInterval(timer);
+		}, 3000);
+	};
+
+	function goBack() {
+		window.history.back();
+	};
+
+	$(document).ready(function() {
+		//Get user
+		firebase.auth().onAuthStateChanged(function(user) {
+			if(user) {
+				//User is signed in
+				const reasons = new Reasons(user);
+				const inspector = new Inspector(user);
+				inspector.inspect();
+				//Event Listeners
+				$('#back-button-container').click(function() {
+					goBack();
+				});
+		
+				$('#refresh-button-container').click(function() {
+					reasons.initLayout();
+				});
+			}
+			else {
+				//User is not signed in
+				window.location.replace('/signin.html');
+			}
+		});
+
+	});
+</script>
+</head><body>
+	<div id="outer-container" class="container">
+		<div id="error-container"></div>
+		<div id="header-container" class="container">
+			<header class="container">
+				<div id="header-content" class="container center">
+					<a href="index.html" target="_self">
+						<div class="favicon-container inner-container img-container">
+							<img src="/resources/favicon.png" alt="Nlyse" class="favicon-img">
+						</div>
+					</a>
+					<div id="nav-container" class="inner-container">
+						<div id="nav-container-signin" class="inner-container">
+							<div id="nav-signin" class="container img-container nav-content">
+								<span id="user-display-name"><!-- Script --></span>
+								<img src="/resources/profile_placeholder.png" alt="User" class="profile-placeholder">
+							</div>
+							<div class="dropdown" id="nav-dropdown">
+								<div class="dropdown-attach"></div>
+								<ul class="dropdown-list">
+									<li><a href="/main_account.html"><img src="/resources/settings_icon.png">Account</a></li>
+									<li id="nav-signin-icon"><a href="/signin.html" target="_self"><img src="/resources/profile_placeholder_invert.png">Sign In</a></li>
+									<li id="nav-signout-icon"><img src="/resources/profile_placeholder_invert.png">Sign Out <span id="nav-signout-name"><!--Username--></span></li>
+									<!-- CHANGE SIGN IN TO 'SIGNOUT USERNAME', IF USER SIGNED IN -->
+								</ul>
+							</div>
+						</div>
+					</div>
+					<div class="clearfix"></div>
+				</div>
+			</header>
+		</div>
+		<div id="main-container" class="container">
+			<main class="container">
+				<div id="main-content" class="container">
+					<section id="section-0" class="inner-container">
+						<div id="section-0-content" class="container section-content">
+							<div id="section-0-heading-container" class="container">
+								<h1 class="container">Prodcuts</h1>
+							</div>
+							<div id="section-0-text-container" class="container">
+								<ul id="prodcut-list">
+									<li><a href="/console.html" target="_self"><img src="/resources/console_overview_icon.png">Overview</a></li>
+									<li><a href="/products/realtimecollector/" target="_self" id="inst-product-link"><img src="/resources/realtime_collector_thumbnail_gray.png">Real Time Collector</a></li>
+								</ul>
+							</div>
+						</div>
+					</section>
+					<section id="section-1" class="container">
+						<div id="section-1-content" class="container section-content center">
+							<div id="section-1-heading-container" class="container">
+								<!-- Section heading -->
+							</div>
+							<div class="container flex-container">
+								<!-- Product Starts -->
+								<div id="back-button-container" class="container" title="Back">
+									<img src="resources/backbutton.png" alt="Back" id="back-button">
+								</div>
+								<div id="main-title-container" class="container center">
+									<h2 id="main-title" class="inner-container">Reasons Data</h2>
+									<!-- TODO: ADD JQUERY REFRESH FUNCTIONALITY -->
+									<div id="refresh-button-container" class="inner-container" title="Refresh">
+										<img src="resources/refreshicon.png" alt="Refresh" id="refresh-button">
+									</div>
+								</div>
+								<div id="main-table-container" class="table-container container center">
+									<table id="main-table" class="startAppend">
+										<tr><th id="reason-id-col">Reason ID</th>
+										<th id="reason-name-col">Reason Name</th>
+										<th id="reason-time-col">Reason Time</th></tr>
+										<!-- SAMPLE ROW SYNTAX
+										<tr class="data-row"><td class="td-id">1</td><td class="td-name">Cutter</td><td class="td-time">1.6</td></tr> 
+										-->
+									</table>
+								</div>
+								<div id="add-reason-container" class="container center">
+									<div id="add-reason-title-container" class="container">
+										<h2 id="add-reason-title">Add Reason</h2>
+									</div>
+									<div id="add-reason-content-container" class="container card">
+										<div id="add-reason-content-1" class="container">
+											<div id="add-reason-input-1" class="inner-container">
+												<input type="text" name="add-reason-name" id="add-reason-name" placeholder="Reason Name?">
+											</div>
+											<div class="container"><!-- BLOCK DIV --></div>
+											<div id="add-reason-input-2" class="inner-container">
+												<input type="text" name="add-reason-time" id="add-reason-time" placeholder="Time Interval?">
+											</div>
+											<div id="add-reason-action-container" class="inner-container action-container">
+												<button id="add-reason-button" type="button">Add Reason</button>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div id="edit-reason-container" class="container center">
+									<div id="edit-reason-title-container" class="container">
+										<h2 id="edit-reason-title">Edit Reason</h2>
+									</div>
+									<div id="edit-reason-content-container" class="container card">
+										<div id="edit-reason-content-1" class="inner-container">
+											<div id="edit-reason-input-1" class="inner-container">
+												<select id="edit-reason-id">
+													<option>Select Reason ID</option>
+													<!-- <option class='data-option'>1</option -->
+												</select>
+											</div>
+										</div>
+										<div class="container"><!-- BLOCK DIV --></div>
+										<div id="edit-reason-content-2" class="inner-container">
+											<div id="edit-reason-input-2" class="inner-container">
+												<!-- TODO: JQUERY - PLACEHOLDER TO DISPLAY LINE NAME BY SELECTED ID -->
+												<input type="text" name="edit-reason-name" id="edit-reason-name" placeholder="New Name?">
+											</div>
+										</div>
+										<div class="container"><!-- BLOCK DIV --></div>
+										<div id="edit-reason-content-3" class="inner-container">
+											<div id="edit-reason-input-3" class="inner-container">
+												<input type="number" name="edit-reason-time" id="edit-reason-time" placeholder="New Time Interval?">
+											</div>
+										</div>
+										<div id="edit-reason-action-container" class="inner-container action-container">
+											<button id="edit-reason-button" type="button">
+												Edit Reason
+											</button>
+										</div>
+									</div>
+								</div>
+								<!-- Product Ends -->
+							</div>
+						</div>
+					</section>
+					<div class="clearfix"></div>
+				</div>
+			</main>
+		</div>
+		<div id="footer-container" class="container">
+			<footer class="container">
+				<div id="footer-content" class="container center">
+					<div id="aboutus-summary" class="inner-container">
+						<h4>About Us</h4>
+						<!-- Write About Us Summary Here -->
+					</div>
+					<div class="contactus-summary inner-container">
+						<h4>Contact Us</h4>
+						<div class="container contact-container">
+							<div class="inner-container img-container contact-icon">
+								<img src="/resources/phone_icon.png" alt="Phone : ">
+							</div>
+							519-757-2531
+						</div>
+						<div class="container contact-container">
+							<div class="inner-container img-container contact-icon">
+								<img src="/resources/mail_icon.png" alt="Email : ">
+							</div>
+							sunil@nlze.com
+						</div>
+						<div class="container contact-container">
+							<div class="inner-container img-container contact-icon">
+								<img src="/resources/home_icon.png" alt="Address : ">
+							</div>
+							43, Coxwell Cres<br>Brantford, ON, N3P1P5<br>Canada.
+						</div>
+					</div>
+					<div class="clearfix"></div>
+					<div id="copyright" class="container">
+						<!-- Copyright display -->
+					</div>
+				</div>
+			</footer>
+		</div>
+	</div>
+</body></html>
+
+
+
+
+
+
+
+
+
+								

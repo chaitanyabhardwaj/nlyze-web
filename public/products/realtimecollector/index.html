@@ -1,0 +1,271 @@
+<!--
+	TODO: FILL IN THE BLANKS(META)
+	DESCRIPTION
+	OWNER
+	FAVICON
+
+	CONVERT HTML TO JSP
+ -->
+ <!--
+ 	.container - block divs
+ 	.inner-container - inline-block divs
+ 	Every section of the page contains 'title' and/or 'content', enclosed within that section's container
+ -->
+<!DOCTYPE html><html lang="en-US" dir="ltr"><head><meta charset="utf-8"><title>Smartdroid Collector</title><meta name="description" content="" ><meta name="owner" content=""><meta name="author" content="Chaitanya Bhardwaj" ><base href="index.html" target="_self" ><meta name="referrer" content="origin-when-cross-origin" ><link rel="icon" type="image/x-icon" href="/resources/favicon_title.png">
+<link rel="stylesheet" type="text/css" href="stylesheets/basicstyle.css">
+<link rel="stylesheet" type="text/css" href="stylesheets/index-large.css">
+<meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<script src="/scripts/jquery-3.2.1.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-functions.js"></script>
+<script src="/scripts/main.js"></script>
+<script src="/scripts/productchecker.js"></script>
+<script src="/scripts/inspector.js"></script>
+<script>
+	'use strict';
+
+	//Initialize RealTimeCollector
+	function RealTimeCollector(user) {
+		this.userRef = user;
+		this.db = firebase.firestore();
+		this.productRef = this.db.collection('users').doc(user.uid).collection('products').doc('np001');
+		//Calling initializing functions
+		this.authUser();
+		this.updateComponents();
+	};
+
+	RealTimeCollector.prototype.authUser = function() {
+		this.productRef.get().then(function(p) {
+			if(p.exists) {
+				if(p.data().active) {
+					//Authorized product
+				}
+				else {
+					//Product not authorized
+				}
+			}
+		}).catch(function(error) {
+			console.log(error);
+		});
+	};
+
+	RealTimeCollector.prototype.updateComponents = function() {
+		const linesRef = this.productRef.collection('lines');
+		const reasonsRef = this.productRef.collection('reasons');
+		const familyRef = this.productRef.collection('family');
+		//Update lines
+		linesRef.get().then(function(querySnapshot) {
+			$('#data-lines-value').text(querySnapshot.size);
+		});
+		//Update reasons
+		reasonsRef.get().then(function(querySnapshot) {
+			$('#data-reasons-value').text(querySnapshot.size);
+		});
+		//Update family
+		familyRef.get().then(function(querySnapshot) {
+			$('#data-family-value').text(querySnapshot.size);
+		});
+	};
+
+	//FUCNTION TO DISPLAY TEXT FLOATING AT THE TOP
+	function displayError(msg) {
+		$('html, body').scrollTop(0);
+		$('#error-container').html(msg);
+		$('#error-container').fadeIn();
+		var timer = setInterval(function() {
+			$('#error-container').fadeOut();
+			clearInterval(timer);
+		}, 4000);
+	};
+
+	$(document).ready(function() {
+
+		firebase.auth().onAuthStateChanged(function(user) {
+			if(user) {
+				//User signed in
+				const inspector = new Inspector(user);
+				inspector.inspect();
+				const realtimecollector = new RealTimeCollector(user);
+			}
+			else {
+				//User is not signed in
+				window.location.replace('/signin.html');
+			}
+		});
+
+	});
+</script>
+</head><body>
+	<div id="outer-container" class="container">
+		<div id="error-container"></div>
+		<div id="header-container" class="container">
+			<header class="container">
+				<div id="header-content" class="container center">
+					<a href="index.html" target="_self">
+						<div class="favicon-container inner-container img-container">
+							<img src="/resources/favicon.png" alt="Nlyse" class="favicon-img">
+						</div>
+					</a>
+					<div id="nav-container" class="inner-container">
+						<div id="nav-container-signin" class="inner-container">
+							<div id="nav-signin" class="container img-container nav-content">
+								<span id="user-display-name"><!-- Script --></span>
+								<img src="/resources/profile_placeholder.png" alt="User" class="profile-placeholder">
+							</div>
+							<div class="dropdown" id="nav-dropdown">
+								<div class="dropdown-attach"></div>
+								<ul class="dropdown-list">
+									<li><a href="/main_account.html"><img src="/resources/settings_icon.png">Account</a></li>
+									<li id="nav-signin-icon"><a href="/signin.html" target="_self"><img src="/resources/profile_placeholder_invert.png">Sign In</a></li>
+									<li id="nav-signout-icon"><img src="/resources/profile_placeholder_invert.png">Sign Out <span id="nav-signout-name"><!--Username--></span></li>
+									<!-- CHANGE SIGN IN TO 'SIGNOUT USERNAME', IF USER SIGNED IN -->
+								</ul>
+							</div>
+						</div>
+					</div>
+					<div class="clearfix"></div>
+				</div>
+			</header>
+		</div>
+		<div id="main-container" class="container">
+			<main class="container">
+				<div id="main-content" class="container">
+					<section id="section-0" class="inner-container">
+						<div id="section-0-content" class="container section-content">
+							<div id="section-0-heading-container" class="container">
+								<h1 class="container">Prodcuts</h1>
+							</div>
+							<div id="section-0-text-container" class="container">
+								<ul id="prodcut-list">
+									<li><a href="/console.html" target="_self"><img src="/resources/console_overview_icon.png">Overview</a></li>
+									<li><a href="/products/realtimecollector/" target="_self" id="inst-product-link"><img src="/resources/realtime_collector_thumbnail_gray.png">Real Time Collector</a></li>
+								</ul>
+							</div>
+						</div>
+					</section>
+					<section id="section-1" class="container">
+						<div id="section-1-content" class="container section-content center">
+							<div id="section-1-heading-container" class="inner-container">
+								<h2>Easy and convenient solution<br>Measure in RealTime.</h2>
+							</div>
+							<div class="inner-container img-container" id="help-container">
+								<a href="/console.html" target="_blank"><img src="/resources/question_mark.png" alt="HELP"></a>
+							</div>
+							<div class="clearfix"></div>
+							<div class="container">
+								<!-- Product starts-->
+								<div id="data-entry-container" class="container center">
+									<div id="data-entry-title-container" class="container">
+										<h2 id="data-entry-title">Data Entry</h2>
+									</div>
+									<div id="data-entry-content-container" class="container">
+										<!--Lines Data-->
+										<div id="data-lines-container" class="data container card">
+											<div id="data-lines-text" class="inner-container text">Lines </div>
+											<div id="data-lines-value" class="inner-container text"></div>
+											<div id="data-lines-action-container" class="inner-container action-container">
+												<a href="lines.html" id="lines-button">View Lines</a>
+											</div>
+											<div class="clearfix"></div>
+										</div>
+										<!--Reasons Data-->
+										<div id="data-reasons-container" class="data container card">
+											<div id="data-reasons-text" class="inner-container text">Reasons </div>
+											<div id="data-reasons-value" class="inner-container text"></div>
+											<div id="data-reasons-action-container" class="inner-container action-container">
+												<a href="reasons.html" id="reasons-button">View Reasons</a>
+											</div>
+											<div class="clearfix"></div>
+										</div>
+										<!--Family Data-->
+										<div id="data-family-container" class="data container card">
+											<div id="data-family-text" class="inner-container text">Family </div>
+											<div id="data-family-value" class="inner-container text"></div>
+											<div id="data-family-action-container" class="inner-container action-container">
+												<a href="family.html" id="family-button">View Family</a>
+											</div>
+											<div class="clearfix"></div>
+										</div>
+										<!--Log entries-->
+										<div id="data-logs-container" class="data container card">
+											<div id="data-logs-text" class="inner-container text">Log Entires </div>
+											<div id="data-logs-value" class="inner-container text"><!-- To be fetched through database --></div>
+											<div id="data-logs-action-container" class="inner-container action-container">
+												<a href="logs.html" id="logs-button">View Logs</a>
+											</div>
+											<div class="clearfix"></div>
+										</div>
+										<!--Button Mapping -->
+										<div id="data-mapping-container" class="data container card">
+											<div id="data-mapping-text" class="inner-container text">Button Mapping </div>
+											<div id="data-mapping-value" class="inner-container text"><!-- To be fetched through database --></div>
+											<div id="data-mapping-action-container" class="inner-container action-container">
+												<a href="buttonmapping.html" id="mapping-button">View Mapping</a>
+											</div>
+											<div class="clearfix"></div>
+										</div>
+									</div>
+								</div>
+								<div id="report-view-container" class="container center">
+									<div id="report-view-title-container" class="container">
+										<h2 id="report-view-title">Report Viewer</h2>
+									</div>
+									<div id="report-view-content-container" class="container card">
+										<div id="report-view-text" class="inner-container text">View Report: </div>
+										<div id="report-view-action-container" class="inner-container action-container">
+											<div id="report-view-lines" class="inner-container">
+												<a href="reportlines.html" id="reportlines-button">By Lines</a>
+											</div>
+											<div id="report-view-reasons" class="inner-container">
+												<a href="reportreasons.html" id="reportreasons-button">By Reasons</a>
+											</div>
+										</div>
+										<div class="clearfix"></div>
+									</div>
+								</div>
+								<!-- Product Ends -->
+							</div>
+						</div>
+					</section>
+					<div class="clearfix"></div>
+				</div>		
+			</main>
+		</div>
+		<div id="footer-container" class="container">
+			<footer class="container">
+				<div id="footer-content" class="container center">
+					<div id="aboutus-summary" class="inner-container">
+						<h4>About Us</h4>
+						<!-- Write About Us Summary Here -->
+					</div>
+					<div class="contactus-summary inner-container">
+						<h4>Contact Us</h4>
+						<div class="container contact-container">
+							<div class="inner-container img-container contact-icon">
+								<img src="/resources/phone_icon.png" alt="Phone : ">
+							</div>
+							519-757-2531
+						</div>
+						<div class="container contact-container">
+							<div class="inner-container img-container contact-icon">
+								<img src="/resources/mail_icon.png" alt="Email : ">
+							</div>
+							sunil@nlze.com
+						</div>
+						<div class="container contact-container">
+							<div class="inner-container img-container contact-icon">
+								<img src="/resources/home_icon.png" alt="Address : ">
+							</div>
+							43, Coxwell Cres<br>Brantford, ON, N3P1P5<br>Canada.
+						</div>
+					</div>
+					<div class="clearfix"></div>
+					<div id="copyright" class="container">
+						<!-- Copyright display -->
+					</div>
+				</div>
+			</footer>
+		</div>
+	</div>
+</body></html>

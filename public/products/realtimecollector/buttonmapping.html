@@ -1,0 +1,570 @@
+
+<!--
+	TODO: FILL IN THE BLANKS(META)
+	DESCRIPTION
+	OWNER
+	FAVICON
+
+	CONVERT HTML TO JSP
+ -->
+ <!--
+ 	.container - block divs
+ 	.inner-container - inline-block divs
+ 	Every section of the page contains 'title' and/or 'content', enclosed within that section's container
+ -->
+<!DOCTYPE html><html lang="en-US" dir="ltr"><head><meta charset="utf-8"><title>Smartdroid Collector</title><meta name="description" content=""><meta name="owner" content=""><meta name="author" content="Chaitanya Bhardwaj"><base href="buttonmapping.html" target="_self"><meta name="referrer" content="origin-when-cross-origin"><link rel="icon" type="image/x-icon" href="/resources/favicon_title.png">
+<link rel="stylesheet" type="text/css" href="stylesheets/basicstyle.css">
+<link rel="stylesheet" type="text/css" href="stylesheets/buttonmapping-large.css">
+<link rel="stylesheet" type="text/css" href="stylesheets/index-large.css">
+<meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<script src="/scripts/jquery-3.2.1.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-functions.js"></script>
+<script src="/scripts/main.js"></script>
+<script src="/scripts/productchecker.js"></script>
+<script src="/scripts/inspector.js"></script>
+<script>
+	'use strict';
+
+	//Initialize ButtonMapping
+	function ButtonMapping(user) {
+		const inst = this;
+		this.userRef = user;
+		this.db = firebase.firestore();
+		this.buttonMappingRef = this.db.collection('users/' + user.uid + '/products/np001/button_mapping');
+		//Instantiate the layout
+		this.initLayout();
+		//Add event listeners
+		$('#add-button-button').click(function() {
+			inst.addButtonEventListener();
+		});
+		$('#edit-mapping-button').click(function() {
+			inst.editMappingEventListener();
+		});
+		$('#select-button-name').change(function() {
+			inst.updateEditValues();
+		});
+	};
+
+	ButtonMapping.prototype.initLayout = function() {
+		//Clear all fields & data
+		$('#add-button-name').val("");
+		$('#add-button-long-id').val("");
+		$('#input-button-long-id').val("");
+		$('#main-table').find('tr.data-row').remove();
+		$('select').find('option.data-option').remove();
+		//Adding button mapping to the table
+		this.buttonMappingRef.orderBy('name').get().then(function(querySnapshot) {
+			querySnapshot.forEach(function(doc) {
+				var data = doc.data();
+				if(data.lastPressed === 0) {
+					$('#warning-icon').show();
+				}
+				$("<tr class='data-row'>").appendTo("table.startAppend")
+					.append($("<td class='td-name'>").text(data.name))
+					.append($("<td class='td-long-id'>").text(data.longId))
+					.append($("<td class='td-line-name'>").text(data.lineName))
+					.append($("<td class='td-reason-name'>").text(data.reasonName))
+					.append($("<td class='td-family-name'>").text(data.familyName));
+				$("<option class='data-option'>").appendTo("select#select-button-name").text(data.name);
+			});
+		});
+		//Adding lines option
+		const linesRef = this.db.collection('users/' + this.userRef.uid + '/products/np001/lines');
+		linesRef.orderBy('id').get().then(function(querySnapshot) {
+			querySnapshot.forEach(function(doc) {
+				var data = doc.data();
+				$("<option class='data-option'>").appendTo("select#select-line-name").text(data.name);
+			});
+		});
+		//Adding reasons option
+		const reasonsRef = this.db.collection('users/' + this.userRef.uid + '/products/np001/reasons');
+		reasonsRef.orderBy('id').get().then(function(querySnapshot) {
+			querySnapshot.forEach(function(doc) {
+				var data = doc.data();
+				$("<option class='data-option'>").appendTo("select#select-reason-name").text(data.name);
+			});
+		});
+		//Adding family option
+		const familyRef = this.db.collection('users/' + this.userRef.uid + '/products/np001/family');
+		familyRef.orderBy('id').get().then(function(querySnapshot) {
+			querySnapshot.forEach(function(doc) {
+				var data = doc.data();
+				$("<option class='data-option'>").appendTo("select#select-family-name").text(data.name);
+			});
+		});
+	};
+
+	ButtonMapping.prototype.addButtonEventListener = function() {
+		const inst = this;
+		var flag = 1;
+		//Get field data
+		const buttonName = $('#add-button-name').val();
+		const buttonLongId = $('#add-button-long-id').val().trim();
+		const validate = this.addValidated(buttonName, buttonLongId);
+		if(validate.status === 1) {
+			//Check duplicate long ID
+			this.buttonMappingRef.get().then(function(querySnapshot) {
+				querySnapshot.forEach(function(doc) {
+					if(doc.id === buttonLongId || doc.data().name === buttonName) {
+						flag = 0;
+					}
+				});
+				if(flag) {
+					inst.buttonMappingRef.doc(buttonLongId).get().then(function(doc) {
+						//Add button to firestore
+						inst.buttonMappingRef.doc(buttonLongId).set({
+							name : buttonName,
+							longId : buttonLongId,
+							lineName : "N/A",
+							reasonName : "N/A",
+							familyName : "N/A",
+							lastPressed : 0,
+							email : '',
+							countryCode : '0',
+							phone : '',
+							frequency : 0,
+							counter : 0,
+							time : 0,
+							interval : 0
+						}).then(function() {
+							//Reason added
+							displayError(buttonName + " ADDED SUCCESFULLY");
+							inst.initLayout();
+						}).catch(function(error) {
+							console.log(error);
+						});
+					}).catch(function(error) {
+						console.log(error);
+					});
+				}
+				else {
+					console.log(flag);
+					displayError('DUPILCATE BUTTON');
+				}
+			});
+			
+		}
+		else if(validate.text === 'INVALID_LONG_ID') {
+			displayError('INVALID BUTTON LONG ID');
+		}
+		else {
+			displayError('PLEASE FILL IN ALL THE FIELDS');
+		}
+	};
+
+	ButtonMapping.prototype.editMappingEventListener = function() {
+		const inst = this;
+		var flag = 1;
+		//Get field data
+		const buttonName = $('#select-button-name').find(':selected').text();
+		const lineName = $('#select-line-name').find(':selected').text();
+		const reasonName = $('#select-reason-name').find(':selected').text();
+		const familyName = $('#select-family-name').find(':selected').text();
+		const buttonLongId = $('#input-button-long-id').val().trim();
+		var oldButtonLongId;
+		const validate = this.editValidated(buttonName, lineName, reasonName, familyName, buttonLongId);
+		if(validate.status) {
+			//check duplicate
+			inst.buttonMappingRef.get().then(function(querySnapshot) {
+				querySnapshot.forEach(function(doc) {
+					if(doc.id === buttonLongId) {
+						if(doc.data().name === buttonName) {
+							//update
+							validate.componentObj.id = buttonLongId;
+							inst.update(validate.componentObj);
+						}
+						else {
+							displayError('DUPILCATE BUTTON MAPPING');
+						}
+						flag = 0;
+					}
+					if(doc.data().name === buttonName)
+						oldButtonLongId = doc.id;
+				});
+				if(flag) {
+					//duplicate not found
+					validate.componentObj.id = oldButtonLongId;
+					inst.deleteAndAdd(validate.componentObj);
+				}
+			});
+		}
+		else if(validate.text === 'INVALID_LONG_ID')
+			displayError('INVALID BUTTON LONG ID');
+		else
+			displayError('PLEASE SELECT ALL FIELDS');
+		console.log(validate);
+	};
+
+	ButtonMapping.prototype.updateEditValues = function() {
+		//fetch button name
+		const bttnName = $('#select-button-name').find(':selected').val();
+		//get handle to bttn edit input fields
+		const bttnLineName = $('#select-line-name');
+		const bttnReasonName = $('#select-reason-name');
+		const bttnFamilyName = $('#select-family-name');
+		const bttnLongId = $('#input-button-long-id');
+		//fetch corresponding bttn long id
+		this.buttonMappingRef.get().then(function(querySnapshot) {
+			querySnapshot.forEach(function(doc) {
+				if(doc.data().name === bttnName) {
+					if(doc.data().lineName !== 'N/A')
+						bttnLineName.val(doc.data().lineName);
+					if(doc.data().reasonName !== 'N/A')
+						bttnReasonName.val(doc.data().reasonName);
+					if(doc.data().familyName !== 'N/A')
+						bttnFamilyName.val(doc.data().familyName);
+					bttnLongId.val(doc.id);
+				}
+			});
+		});
+	};
+
+	ButtonMapping.prototype.update = function(componentObj) {
+		console.log('run1');
+		const inst = this;
+		this.buttonMappingRef.doc(componentObj.id).update(componentObj).then(function() {
+			//mapping updated
+			displayError('BUTTON MAPPING UPDATED SUCCESFULLY');
+			//refresh layout
+			inst.initLayout();
+		}).catch(function(error) {
+			console.log(error);
+		});
+	};
+
+	ButtonMapping.prototype.deleteAndAdd = function(componentObj) {
+		console.log('run2');
+		const inst = this;
+		//get old bttn data
+		this.buttonMappingRef.doc(componentObj.id).get().then(function(doc) {
+			if(doc.exists) {
+				const data = doc.data();
+				componentObj.lastPressed = data.lastPressed;
+				componentObj.email = data.email;
+				componentObj.phone = data.phone;
+				componentObj.frequency = data.frequency;
+				componentObj.counter = data.counter;
+				componentObj.time = data.time;
+				componentObj.interval = data.interval;
+				//delete old bttn
+				inst.buttonMappingRef.doc(componentObj.id).delete().then(function() {
+					//deleted
+					//add new bttn
+					inst.buttonMappingRef.doc(componentObj.longId).set(componentObj).then(function() {
+						//added
+						displayError('BUTTON MAPPING UPDATED SUCCESFULLY');
+						//refresh layout
+						inst.initLayout();
+					}).catch(function(error) {
+						console.log(error);
+					});
+				}).catch(function(error) {
+					console.log(error);
+				});
+			}
+		}).catch(function(error) {
+			console.log(error);
+		});
+	};
+
+	ButtonMapping.prototype.addValidated = function(buttonName, longId) {
+		var message;
+		if(buttonName === '' || longId === '') {
+			message = {
+				status : 0,
+				text : 'FIELD_EMPTY/0'
+			};
+			return message;
+		}
+		if($.isNumeric(longId)) {
+			message = {
+				status : 1,
+				text : 'RESULT_OK'
+			};
+			return message;
+		}
+		message = {
+			status : 0,
+			text : 'INVALID_LONG_ID'
+		};
+		return message;
+	};
+
+	ButtonMapping.prototype.editValidated = function(buttonName, lineName, reasonName, familyName, longId) {
+		var message; var components = {};
+		if(buttonName === 'Select Button Name') {
+			message = {
+				status : 0,
+				text : 'UNSELECTED/1'
+			};
+			return message;
+		}
+		if(lineName !== 'Select Line Name')
+			components.lineName = lineName;
+		if(reasonName !== 'Select Reason Name')
+			components.reasonName = reasonName;
+		if(familyName !== 'Select Family Name')
+			components.familyName = familyName;
+		if($.isNumeric(longId))
+			components.longId = longId;
+		else if(longId !== '') {
+			message = {
+				status : 0,
+				text : 'INVALID_LONG_ID'
+			};
+			return message;
+		}
+		//Add the button name
+		components.name = buttonName;
+		message = {
+			status : 1,
+			text : 'RESULT_OK',
+			componentObj : components
+		};
+		return message;
+	};
+
+	//FUCNTION TO DISPLAY TEXT FLOATING AT THE TOP
+	function displayError(msg) {
+		$('html, body').scrollTop(0);
+		$('#error-container').html(msg);
+		$('#error-container').fadeIn();
+		var timer = setInterval(function() {
+			$('#error-container').fadeOut();
+			clearInterval(timer);
+		}, 3000);
+	};
+
+	function goBack() {
+		window.history.back();
+	};
+
+	$(document).ready(function() {
+		//Get user
+		firebase.auth().onAuthStateChanged(function(user) {
+			if(user) {
+				//User is signed in
+				const buttonMapping = new ButtonMapping(user);
+				const inspector = new Inspector(user);
+				inspector.inspect();
+				//Event Listeners
+				$('#back-button-container').click(function() {
+					goBack();
+				});
+		
+				$('#refresh-button-container').click(function() {
+					buttonMapping.initLayout();
+				});
+			}
+			else {
+				//User is not signed in
+				window.location.replace('/signin.html');
+			}
+		});
+
+	});
+</script>
+</head><body>
+	<div id="outer-container" class="container">
+		<div id="error-container"></div>
+		<div id="header-container" class="container">
+			<header class="container">
+				<div id="header-content" class="container center">
+					<a href="index.html" target="_self">
+						<div class="favicon-container inner-container img-container">
+							<img src="/resources/favicon.png" alt="Nlyse" class="favicon-img">
+						</div>
+					</a>
+					<div id="nav-container" class="inner-container">
+						<div id="nav-container-signin" class="inner-container">
+							<div id="nav-signin" class="container img-container nav-content">
+								<span id="user-display-name"><!-- Script --></span>
+								<img src="/resources/profile_placeholder.png" alt="User" class="profile-placeholder">
+							</div>
+							<div class="dropdown" id="nav-dropdown">
+								<div class="dropdown-attach"></div>
+								<ul class="dropdown-list">
+									<li><a href="/main_account.html"><img src="/resources/settings_icon.png">Account</a></li>
+									<li id="nav-signin-icon"><a href="/signin.html" target="_self"><img src="/resources/profile_placeholder_invert.png">Sign In</a></li>
+									<li id="nav-signout-icon"><img src="/resources/profile_placeholder_invert.png">Sign Out <span id="nav-signout-name"><!--Username--></span></li>
+									<!-- CHANGE SIGN IN TO 'SIGNOUT USERNAME', IF USER SIGNED IN -->
+								</ul>
+							</div>
+						</div>
+					</div>
+					<div class="clearfix"></div>
+				</div>
+			</header>
+		</div>
+		<div id="main-container" class="container">
+			<main class="container">
+				<div id="main-content" class="container">
+					<section id="section-0" class="inner-container">
+						<div id="section-0-content" class="container section-content">
+							<div id="section-0-heading-container" class="container">
+								<h1 class="container">Prodcuts</h1>
+							</div>
+							<div id="section-0-text-container" class="container">
+								<ul id="prodcut-list">
+									<li><a href="/console.html" target="_self"><img src="/resources/console_overview_icon.png">Overview</a></li>
+									<li><a href="/products/realtimecollector/" target="_self" id="inst-product-link"><img src="/resources/realtime_collector_thumbnail_gray.png">Real Time Collector</a></li>
+								</ul>
+							</div>
+						</div>
+					</section>
+					<section id="section-1" class="container">
+						<div id="section-1-content" class="container section-content center">
+							<div id="section-1-heading-container" class="container">
+								<!-- Section heading -->
+							</div>
+							<div class="container">
+								<!-- Product Starts -->
+								<div id="back-button-container" class="inner-container" title="Back">
+									<img src="resources/backbutton.png" alt="Back" id="back-button">
+								</div>
+								<div class="settings-container inspector-hide inner-container" title="Buttons Setting">
+									<a href="/products/realtimecollector/buttonsettings.html" target="_self">
+										<img src="/resources/settings_icon.png" alt="Settings">
+										SETTINGS
+										<img src="/resources/warning_icon.png" alt="!" id="warning-icon">
+									</a>
+								</div>
+								<div id="main-title-container" class="container center">
+									<h2 id="main-title" class="inner-container">Button Mapping</h2>
+									<!-- TODO: ADD JQUERY REFRESH FUNCTIONALITY -->
+									<div id="refresh-button-container" class="inner-container" title="Refresh">
+										<img src="resources/refreshicon.png" alt="Refresh" id="refresh-button">
+									</div>
+								</div>
+								<div id="main-table-container" class="table-container container center">
+									<table id="main-table" class="startAppend">
+										<tr><th id="button-name-col">Button Name</th>
+										<th id="button-long-id-col">Button ID</th>
+										<th id="line-name-col">Line Name</th>
+										<th id="reason-name-col">Reason Name</th>
+										<th id="family-name-col">Family Name</th></tr>
+										<!-- SAMPLE ROW SYNTAX
+
+										<tr class="data-row">
+											<td class="td-name">Button Name1</td><td class="td-long-id">324823059234</td><td class="td-line-name">Assembly Line</td><td class="td-reason-name">Cutter</td><td class="td-family-name">ShortStop</td>
+										</tr>
+
+										-->
+									</table>
+								</div>
+								<div id="add-button-container" class="container inspector-hide center">
+									<div id="add-button-title-container" class="container">
+										<h2 id="add-button-title">Add Button</h2>
+									</div>
+									<div id="add-button-content-container" class="container card">
+										<div id="add-button-content-1" class="container">
+											<div id="add-button-input-1" class="container">
+												<input type="text" name="add-button-name" id="add-button-name" placeholder="Button Name?">
+											</div>
+											<div id="add-button-input-2" class="inner-container">
+												<input type="text" name="add-button-long-id" id="add-button-long-id" placeholder="Button ID?">
+											</div>
+											<div id="add-button-action-container" class="inner-container action-container">
+												<button id="add-button-button" type="button">Add Button</button>
+											</div>
+										</div>	
+									</div>
+								</div>
+								<div id="edit-mapping-container" class="container inspector-hide center">
+									<div id="edit-mapping-title-container" class="container">
+										<h2 id="edit-mapping-title">Edit Button Mapping</h2>
+									</div>
+									<div id="edit-mapping-content-container" class="container card">
+										<div id="edit-mapping-content-1" class="container">
+											<div id="edit-mapping-input-1" class="container">
+												<select id="select-button-name">
+													<option>Select Button Name</option>
+													<!-- <option class='data-option'>Button1</option> -->
+												</select>
+											</div>
+											<div id="edit-mapping-input-2" class="container">
+												<select id="select-line-name">
+													<option>Select Line Name</option>
+													<!-- <option class='data-option'>Assembly Line</option> -->
+												</select>
+											</div>
+											<div id="edit-mapping-input-3" class="container">
+												<select id="select-reason-name">
+													<option>Select Reason Name</option>
+													<!-- <option class='data-option'>Cutter</option> -->
+												</select>
+											</div>
+											<div id="edit-mapping-input-4" class="container">
+												<select id="select-family-name">
+													<option>Select Family Name</option>
+													<!-- <option class='data-option'>ShortStop</option> -->
+												</select>
+											</div>
+											<div id="edit-mapping-input-5" class="inner-container">
+												<input type="text" id="input-button-long-id" name="input-button-long-id" placeholder="New Button ID?">
+											</div>
+											<div id="edit-mapping-action-container" class="inner-container action-container">
+												<button id="edit-mapping-button" type="button">Change Mapping</button>
+											</div>
+										</div>
+									</div>
+								</div>
+								<!-- Product Ends -->
+							</div>
+						</div>
+					</section>
+					<div class="clearfix"></div>
+				</div>
+			</main>
+		</div>
+		<div id="footer-container" class="container">
+			<footer class="container">
+				<div id="footer-content" class="container center">
+					<div id="aboutus-summary" class="inner-container">
+						<h4>About Us</h4>
+						<!-- Write About Us Summary Here -->
+					</div>
+					<div class="contactus-summary inner-container">
+						<h4>Contact Us</h4>
+						<div class="container contact-container">
+							<div class="inner-container img-container contact-icon">
+								<img src="/resources/phone_icon.png" alt="Phone : ">
+							</div>
+							519-757-2531
+						</div>
+						<div class="container contact-container">
+							<div class="inner-container img-container contact-icon">
+								<img src="/resources/mail_icon.png" alt="Email : ">
+							</div>
+							sunil@nlze.com
+						</div>
+						<div class="container contact-container">
+							<div class="inner-container img-container contact-icon">
+								<img src="/resources/home_icon.png" alt="Address : ">
+							</div>
+							43, Coxwell Cres<br>Brantford, ON, N3P1P5<br>Canada.
+						</div>
+					</div>
+					<div class="clearfix"></div>
+					<div id="copyright" class="container">
+						<!-- Copyright display -->
+					</div>
+				</div>
+			</footer>
+		</div>
+	</div>
+</body></html>
+
+
+
+
+
+
+
+
+
+
+
+	

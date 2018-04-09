@@ -1,0 +1,24 @@
+#header-content { text-align: center; }
+#header-content h2 { color: #c7c7c7; font-family: 'Asap', sans-serif;  }
+#section-0-content { position: relative; }
+#section-0-heading-container { position: absolute; top: 45%; left: 36%; z-index: 99 }
+#section-0-heading-container h1 { color: #fff; font-size: 220%; }
+#section-0-img { -webkit-filter: blur(4px); -moz-filter: blur(4px); -ms-filter: blur(4px); -o-filter: blur(4px); filter: blur(4px); }
+#section-1 { margin-top: 70px; margin-bottom: 100px; }
+#section-1-content { width: 70%; }
+#section-1-heading-container { border-bottom: 1px solid #c7c7c7; margin-bottom: 20px; padding: 5px; }
+#section-1-heading-container h1 { font-family: 'Asap', sans-serif; color: #333333; padding: 5px; display: inline-block; }
+#login-button-container { padding: 2px 5px; background-color: #1daeeb; border-radius: 7px; float: right; }
+#login-button-container a { color: #fff; }
+.form-container { width: 75%; text-align: center; margin: auto; }
+.form-container input { font-weight: bolder; }
+.form-container input, button { outline: none; border: 1px solid #ccc; border-radius: 7px; padding: 5px 10px; font-size: 105%; width: 100%; }
+.form-container .user-type { width: 20px; }
+#realtime-collector-activate { width: 20px; }
+#realtime-collector-date { width: 150px; }
+.form-container .input-container { width: 250px; margin: 20px; }
+.form-container button { width: 100px; background-color: #1daeeb; border: none; -webkit-box-shadow: 0px 0px 5px #7c7c7c; -moz-box-shadow: 0px 0px 5px #7c7c7c; -ms-box-shadow: 0px 0px 5px #7c7c7c; -o-box-shadow: 0px 0px 5px #7c7c7c; box-shadow: 0px 0px 5px #7c7c7c; font-family: 'Asap', sans-serif; color: #fff; padding: 10px; }
+.nlyze-1 { width: 30px; height: auto; vertical-align: middle; margin: 0px 5px; }
+#link-account-container { display: none; }
+#signin-button { margin-top: 20px; cursor: pointer; display: block; margin: auto; }
+

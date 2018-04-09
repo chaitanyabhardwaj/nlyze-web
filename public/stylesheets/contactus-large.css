@@ -1,0 +1,22 @@
+
+#section-0-content { position: relative; padding: 0px; }
+#section-0-heading-container { position: absolute; top: 45%; left: 45%; font-family: 'Asap', sans-serif; color: #fff; background-color: rgba(0,0,0,0.7); padding: 10px; border-left: 5px solid #1daeeb; }
+#section-1 { width: 65%; margin-left: 10px; }
+#section-1-content { padding: 30px; }
+#section-3-content { padding: 50px; }
+#section-3-heading-container { text-align: center; }
+#section-3-heading-container p { font-size: 250%; font-weight: lighter; color: #333333; }
+#section-3-heading-container img { width: 50px; height: auto; vertical-align: middle; }
+#section-3-heading-lighter { font-size: 120%; font-weight: lighter; color: #333333; }
+.form-container .inner-container { width: 49%; }
+.form-container .inner-container + .inner-container { float: right; }
+.form-container .clearfix + .container { margin-top: 10px; margin-bottom: 10px; }
+.form-container input, .form-container select { font-weight: bolder; }
+.form-container input, textarea, button { border: 1px solid #ccc; border-radius: 7px; padding: 5px; font-size: 105%; width: 100%; }
+.form-container textarea { resize: none; min-height: 250px; }
+.form-container button { width: 100px; background-color: #1daeeb; border: none; -webkit-box-shadow: 0px 0px 5px #7c7c7c; -moz-box-shadow: 0px 0px 5px #7c7c7c; -ms-box-shadow: 0px 0px 5px #7c7c7c; -o-box-shadow: 0px 0px 5px #7c7c7c; box-shadow: 0px 0px 5px #7c7c7c; font-family: 'Asap', sans-serif; color: #fff; padding: 10px; }
+#section-2 { float: right; margin-top: 100px; width: 22%; }
+.contact-container h3 { font-family: 'Asap', sans-serif; }
+@media screen and (min-width: 1500px) {
+	.form-container input, textarea { padding: 10px; }
+}

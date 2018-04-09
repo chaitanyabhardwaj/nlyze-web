@@ -1,0 +1,363 @@
+<!--
+	TODO :
+	EMAIL VARIFICATION
+	VALIDATION
+-->
+
+<!DOCTYPE html><html lang="en-US" dir="ltr"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" /><title>Sign Up | NLYZE</title><meta name="description" content="" /><meta name="owner" content="Sunil Malhotra"><meta name="author" content="Chaitanya Bhardwaj" /><base href="createid.html" target="_blank" /><meta name="referrer" content="origin-when-cross-origin" /><link rel="icon" type="image/x-icon" href="resources/favicon_title.png" /><meta name="robots" content="index, follow">
+<link rel="stylesheet" type="text/css" href="stylesheets/basicstyle.css" />
+<link rel="stylesheet" type="text/css" media="screen and (max-width: 1000px)" href="stylesheets/createid-small.css" />
+<link rel="stylesheet" type="text/css" media="screen and (min-width: 1001px)" href="stylesheets/createid-large.css" />
+<link rel="stylesheet" type="text/css" href="/scripts/jquery-ui-1.12.1.custom/jquery-ui.min.css">
+<script src="scripts/jquery-3.2.1.min.js"></script>
+<script src="/scripts/jquery-ui-1.12.1.custom/jquery-ui.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.10.1/firebase.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.10.1/firebase-firestore.js"></script>
+<script src="scripts/main.js"></script>
+<script>
+
+	'use strict';
+	//initialize AccountCreator
+	function AccountCreator() {
+		const inst = this;
+		this.db = firebase.firestore();
+		this.newUser = 0;
+		//Instantiate datepicker
+		$('#realtime-collector-date').datepicker({
+   			changeMonth : true,
+    		changeYear : true,
+    		showWeek : true,
+    		dateFormat : 'mm/dd/yy',
+    		firstDay : 1,
+    		yearRange: '+nn:+10'
+    	});
+		//Add event listeners
+		firebase.auth().onAuthStateChanged(function(user) {
+			if(user) {
+				//user signed in
+				inst.updateUserProfile(user);
+			}
+		});
+		$('#signin-button').click(function() {
+			inst.fetchValues();
+			inst.signUpUser();
+		});
+		$('.user-type').change(function() {
+		 	if($(this).val() === 'user-type') {
+		 		$('#link-account-container').slideDown(200);
+		 		$('#products-form-container').slideUp(200);
+		 	}
+		 	else {
+		 		$('#link-account-container').slideUp(200);
+		 		$('#products-form-container').slideDown(200);
+		 	}
+		});
+	};
+
+	AccountCreator.prototype.signUpUser = function() {
+		const inst = this;
+		const validate = this.validateValues();
+		if(validate.status) {
+			if(this.accountTypeValue === 'user-type') {
+				firebase.auth().fetchProvidersForEmail(this.linkedEmailValue).then(function(user) {
+					if(user.length > 0) {
+						firebase.auth().createUserWithEmailAndPassword(inst.emailValue, inst.passwdValue).then(function(user) {
+							//user account created
+							inst.newUser = 1;
+							//fill user profile info onAuthStateChanged
+						}).catch(function(error) {
+							console.log(error);
+						});		
+					}
+				});
+			}
+			firebase.auth().createUserWithEmailAndPassword(this.emailValue, this.passwdValue).then(function(user) {
+				//user account created
+				inst.newUser = 1;
+				//fill user profile info onAuthStateChanged
+			}).catch(function(error) {
+				console.log(error);
+			});
+		}
+		else {
+			displayError(validate.text);
+		}
+	};
+
+	AccountCreator.prototype.updateUserProfile = function(user) {
+		const inst = this;
+		const validate = this.validateValues();
+		if(validate.status) {
+			//update user profile
+			if(this.newUser) {
+				user.updateProfile({
+					displayName : inst.nameValue
+				}).then(function() {
+					//Adding to firestore
+					if(inst.accountTypeValue === 'admin-type') {
+						inst.linkedEmailValue = '';
+					}
+					//Profile details
+					inst.db.collection('users').doc(user.uid).set({
+						//basic
+						phone : inst.phoneValue,
+						account_type : inst.accountTypeValue,
+						user_email : inst.emailValue,
+						linked_email : inst.linkedEmailValue,
+						//initialize company state
+						company_name : '',
+						country : '',
+						city : '',
+						street : ''
+					}).then(function() {
+						if(inst.accountTypeValue === 'admin-type' && inst.activateProduct) {
+							//add products
+							//Get current timestamp
+							const currentTimestamp = new Date().getTime();
+							const tillTimestamp = new Date(inst.activateTill).getTime();
+							inst.db.collection('users').doc(user.uid).collection('products').doc('np001').set({
+								active : 1, //default(active)
+								startStamp : currentTimestamp,
+								endStamp : tillTimestamp
+							}).then(function() {
+								window.location.replace('/');
+							}).catch(function(error) {
+								console.log(error);
+							});
+						}
+						else {
+							window.location.replace('/');
+						}
+					}).catch(function(error) {
+						console.log(error);
+					});
+				}).catch(function(error) {
+					console.log(error);
+				});
+			}
+			else {
+				window.location.replace('/');
+			}
+		}
+		else {
+			displayError(validate.text);
+		}
+	};
+
+	AccountCreator.prototype.fetchValues = function() {
+		this.nameValue = $('#fname').val().trim();
+		this.emailValue = $('#uname').val().trim();
+		this.phoneValue = $('#ph-number').val().trim();
+		this.passwdValue = $('#passwd').val().trim();
+		this.accountTypeValue = $('input[name=user-type]:checked').val();
+		this.linkedEmailValue = $('#linked-email').val().trim();
+		this.activateProduct = $('#realtime-collector-activate').is(':checked');
+		this.activateTill = $('#realtime-collector-date').val().trim();
+	};
+
+	AccountCreator.prototype.validateValues = function() {
+		var message;
+		const emailRegex = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+		if(this.nameValue === undefined) {
+			message = {
+				status : 0,
+				text : 'WELCOME'
+			};
+			return message;
+		}
+		if(this.nameValue === '' || this.emailValue === '' || this.phoneValue === '') {
+			message = {
+				status : 0,
+				text : 'PLEASE FILL IN ALL THE FIELDS'
+			};
+			return message;
+		}
+    	if(!emailRegex.test(this.emailValue)) {
+    		message = {
+    			status : 0,
+    			text : 'INVALID USER EMAIL ADDRESS'
+    		};
+    		return message;
+    	}
+    	if(this.passwdValue < 7) {
+    		message = {
+    			status : 0,
+    			text : 'PASSWORD MUST CONTAIN AT LEAST 7 CHARACTERS'
+    		};
+    		return message;
+    	}
+    	if(this.accountTypeValue === 'user-type') {
+    		if(!emailRegex.test(this.linkedEmailValue)) {
+    			message = {
+    				status : 0,
+    				text : 'INVALID LINKED EMAIL ADDRESS'
+    			};
+    			return message;
+    		}
+    	}
+    	if(this.accountTypeValue === 'admin-type') {
+    		if(this.activateProduct) {
+    			if(this.activateTill === '') {
+    				message = {
+    					status : 0,
+    					text : "SPECIFY PRODUCT 'ACTIVE TILL' DATE"
+    				};
+    				return message;
+    			}
+    		}
+    	}
+		message = {
+			status : 1,
+			text : 'RESULT_OK'
+		};
+		return message;
+	};
+
+	//FUCNTION TO DISPLAY TEXT FLOATING AT THE TOP
+	function displayError(msg) {
+		$('html, body').scrollTop(0);
+		$('#error-container').html(msg);
+		$('#error-container').fadeIn();
+		var timer = setInterval(function() {
+			$('#error-container').fadeOut();
+			clearInterval(timer);
+		}, 4000);
+	};
+
+	$(document).ready(function() {
+		const accountCreator = new AccountCreator();
+	});
+</script>
+</head><body>
+	<div id="outer-container" class="container">
+		<div id="error-container"></div>
+		<div id="header-container" class="container">
+			<header class="container">
+				<div id="header-content" class="container center">
+					<a href="index.html" target="_self">
+						<div class="favicon-container inner-container img-container">
+							<img src="resources/favicon.png" alt="Nlyse" class="favicon-img">
+						</div>
+					</a>
+					<h2>SignUp Tool</h2>
+				</div>
+			</header>
+		</div>
+		<div id="main-container" class="container">
+			<main class="container">
+				<div id="main-content" class="container">
+					<!--<section id="section-0" class="container">
+						<div id="section-0-content" class="container section-content center">
+							<div id="section-0-heading-container" class="container">
+								<h1>CREATE YOUR NYLZE ID</h1>
+							</div>
+							<div class="container img-container">
+								<img src="resources/createid_banner.png" alt="Image1" id="section-0-img">
+							</div>
+							<div id="section-0-text-container" class="container">
+								<!- Write Text Here ->
+							</div>
+						</div>
+					</section> -->
+					<section id="section-1" class="container">
+						<div id="section-1-content" class="container section-content center card">
+							<div id="section-1-heading-container" class="container">
+								<h1>Sign Up</h1>
+								<div class="inner-container" id="login-button-container">
+									<a href="signin.html" target="_self">Log In</a>
+								</div>
+								<div class="clearfix"></div>
+							</div>
+							<div class="container form-container">
+								<div class="inner-container input-container">
+									<input type="text" name="fname" id="fname" placeholder="Name">
+								</div>
+								<div class="inner-container input-container">
+									<input type="email" name="uname" id="uname" placeholder="Email">
+								</div>
+								<div class="container"><!--Div Block--></div>
+								<div class="inner-container input-container">
+									<input type="number" name="ph-number" id="ph-number" placeholder="Phone">
+								</div>
+								<div class="inner-container input-container">
+									<input type="password" name="passwd" id="passwd" placeholder="Password">
+								</div>
+								<div class="container"><!--Div Block--></div>
+								<div class="inner-container">
+									Type Of Account :
+								</div>
+								<div class="inner-container input-container">
+									<div class="inner-container">
+										<input type="radio" name="user-type" class="user-type" value="admin-type" checked>Admin
+									</div>
+									<div class="inner-container">
+										<input type="radio" name="user-type"  class="user-type" value="user-type">User
+									</div>
+								</div>
+								<div class="container" id="link-account-container">
+									<div class="inner-container">
+										Link this account to :
+									</div>
+									<div class="inner-container input-container">
+										<input type="email" name="linked-email" id="linked-email" placeholder="Email Address?">
+									</div>
+								</div>
+								<div class="container" id="products-form-container">
+									<div class="container"><b>Products</b></div>
+									<div class="container">RealTime Collector</div>
+									<div class="inner-container">Activate Product :</div>
+									<div class="inner-container input-container">
+										<input type="checkbox" id="realtime-collector-activate" checked>
+									</div>
+									<div class="container"><!--DIV BLOCK--></div>
+									<div class="inner-container">Active Till :</div>
+									<div class="inner-container input-container">
+										<input type="text" id="realtime-collector-date" placeholder="Date?">
+									</div>
+								</div>
+								<div class="container">
+									<button type="button" id="signin-button">SIGN UP</button>
+								</div>
+							</div>
+						</div>
+					</section>
+				</div>
+			</main>
+		</div>
+		<div id="footer-container" class="container">
+			<footer class="container">
+				<div id="footer-content" class="container center">
+					<div id="aboutus-summary" class="inner-container">
+						<h4>About Us</h4>
+						<!-- Write About Us Summary Here -->
+					</div>
+					<div class="contactus-summary inner-container">
+						<h4>Contact Us</h4>
+						<div class="container contact-container">
+							<div class="inner-container img-container contact-icon">
+								<img src="resources/phone_icon.png" alt="Phone : ">
+							</div>
+							519-757-2531
+						</div>
+						<div class="container contact-container">
+							<div class="inner-container img-container contact-icon">
+								<img src="resources/mail_icon.png" alt="Email : ">
+							</div>
+							sunil@nlze.com
+						</div>
+						<div class="container contact-container">
+							<div class="inner-container img-container contact-icon">
+								<img src="resources/home_icon.png" alt="Address : ">
+							</div>
+							43, Coxwell Cres<br>Brantford, ON, N3P1P5<br>Canada.
+						</div>
+					</div>
+					<div class="clearfix"></div>
+					<div id="copyright" class="container">
+						<!-- Copyright display -->
+					</div>
+				</div>
+			</footer>
+		</div>
+	</div>
+</body></html>

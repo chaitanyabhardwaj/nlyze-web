@@ -1,0 +1,21 @@
+
+
+#main-content { z-index: 9; width: 70%; margin: auto; margin-top: 100px; margin-bottom: 100px; -webkit-box-shadow: 0px 0px 3px #7c7c7c; -moz-box-shadow: 0px 0px 3px #7c7c7c; -ms-box-shadow: 0px 0px 3px #7c7c7c; -o-box-shadow: 0px 0px 3px #7c7c7c; box-shadow: 0px 0px 3px #7c7c7c; border: 1px solid #c7c7c7; padding: 20px; }
+#section-0-content { width: 75%; }
+#section-0-heading-container { border-bottom: 1px solid #c7c7c7; padding-left: 10px; }
+#section-0-text-container { padding-left: 10px; }
+#section-1 { margin-top: 10px; }
+#section-1-content { padding: 10px; width: 75%; margin: auto; }
+#profile-basic, #profile-company, #profile-products, #save-container { border-top: 1px solid #c7c7c7; padding: 20px 0px; }
+.sub-head { color: #1daeeb; margin-bottom: 5px; }
+.field-container + .field-container { margin-top: 10px; }
+.field { margin-left: 20px; }
+.field-container input { border: none; outline: none; border-bottom: 1px solid #ccc; border-radius: 7px; font-size: 90%; width: 100%; width: 250px; padding: 5px; }
+#old-passwd, #new-passwd { font-family: 'Asap', sans-serif; font-weight: bolder; }
+.field-container select { border: none; outline: none; border-bottom: 1px solid #ccc; }
+#country-code { width: 120px; }
+.field-container .input-container { float: right; margin-right: 20px; }
+#change-passwd-button, #edit-profile-button, #save-button { background-color: #1daeeb; padding: 7px; font-family: 'Asap', sans-serif; outline: none; border: none; color: #fff; border-radius: 7px; float: right; margin-right: 20px; cursor: pointer; font-size: 85%; font-weight: normal; vertical-align: middle; }
+#change-passwd { display: none; }
+#active-status-img-1, #active-status-img-2 { width: 30px; height: 30px; }
+#active-till { font-weight: bolder; text-align: right; font-size: 120%; border: none; }

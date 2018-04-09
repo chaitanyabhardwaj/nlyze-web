@@ -1,0 +1,526 @@
+
+<!--
+	TODO: FILL IN THE BLANKS(META)
+	DESCRIPTION
+	OWNER
+	FAVICON
+
+	CONVERT HTML TO JSP
+ -->
+ <!--
+ 	.container - block divs
+ 	.inner-container - inline-block divs
+ 	Every section of the page contains 'title' and/or 'content', enclosed within that section's container
+ -->
+<!DOCTYPE html><html lang="en-US" dir="ltr"><head><meta charset="utf-8"><title>Nlyze Console</title><meta name="description" content="" ><meta name="owner" content=""><meta name="author" content="Chaitanya Bhardwaj" ><base href="nlyze_user_product.html" target="_self" ><meta name="referrer" content="origin-when-cross-origin" ><link rel="icon" type="image/x-icon" href="/resources/favicon_title.png">
+<link rel="stylesheet" type="text/css" href="stylesheets/basicstyle.css" />
+<link rel="stylesheet" type="text/css" media="screen and (min-width: 1001px)" href="stylesheets/console-large.css" />
+<link rel="stylesheet" type="text/css" href="stylesheets/nlyze_user_product_large.css">
+<link rel="stylesheet" type="text/css" href="/scripts/jquery-ui-1.12.1.custom/jquery-ui.min.css">
+<meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<script src="/scripts/jquery-3.2.1.min.js"></script>
+<script src="/scripts/jquery-ui-1.12.1.custom/jquery-ui.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-functions.js"></script>
+<script src="/scripts/main.js"></script>
+<script src="/scripts/inspector.js"></script>
+<script>
+	'use strict';
+	//Initialize Product
+	function Product(user) {
+		const inst = this;
+		//authenticate admin
+		this.userRef = user;
+		this.authAdmin();
+		this.db = firebase.firestore();
+		//Instantiate datepicker
+		$('#add-product-date, #edit-product-date').datepicker({
+   			changeMonth : true,
+    		changeYear : true,
+    		showWeek : true,
+    		dateFormat : 'mm/dd/yy',
+    		firstDay : 1,
+    		yearRange: '+nn:+10'
+    	});
+		//shortcuts to dom elements
+		this.outerWrapper = $('#outer-wrapper');
+		//add event listeners
+		$('.component-table').on('click', '.add-product-button', function() {
+			inst.addUID = $(this).attr('data-id');
+			inst.show($('#add-product-container'));
+			inst.fillAddProductValues();
+		});
+		$('#close-add-product').click(function() {
+			inst.hide($('#add-product-container'))
+		});
+		$('.component-table').on('click', '.edit-product-button', function() {
+			inst.editUID = $(this).attr('data-id');
+			inst.show($('#edit-product-container'));
+			inst.fillEditProductValues();
+		});
+		$('#edit-product-select').change(function() {
+			const editProductSelect = $('#edit-product-select').find(':selected');
+			if(editProductSelect.val() !== 'Select Product') {
+				//update val
+				inst.updateEditProductValues();
+			}
+			else {
+				//clear updated values
+				$('#edit-product-date').val(null);
+				$('#edit-product-active').prop('checked', false);
+			}
+		});
+		$('#close-edit-product').click(function() {
+			inst.hide($('#edit-product-container'));
+		});
+
+		$('#create-product-button').click(function() {
+			inst.fetchAddProductValues();
+			inst.addProductInUser();
+		});
+		$('#change-product-button').click(function() {
+			inst.fetchEditProductValues();
+			inst.editProductInUser();
+		});
+	};
+
+	Product.prototype.authAdmin = function() {
+		const inst = this;
+		const authResult = firebase.functions().httpsCallable('authAdmin');
+		authResult({}).then(result => {
+			if(result.data) {
+				inst.initLayout();
+				$('.loader').css('display', 'none');
+			}
+			else {
+				window.location.replace('/');
+			}
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	Product.prototype.initLayout = function() {
+		const inst = this;
+		//Clear all fields & data
+		$('#user-product-table').find('tr.data-row').remove();
+		//reterive user product data
+		var addBttn, editBttn;
+		this.db.collection('users').get().then(querySnapshot => {
+			querySnapshot.forEach(doc => {
+				if(doc.data().account_type === 'admin-type' && doc.data().active) {
+					//append user data to table
+					addBttn = '<button type="button" class="setting-button add-product-button" data-id="' + doc.id + '">ADD</button>';
+					editBttn = '<button type="button" class="setting-button edit-product-button" data-id="' + doc.id + '">EDIT</button>';
+					$("<tr class='data-row'>").appendTo("table#user-product-table")
+						.append($("<td class='td-email'>").text(doc.data().user_email))
+						.append($("<td class='td-settings'>").html(addBttn + " " + editBttn));
+				}
+			});
+		});
+	};
+
+	Product.prototype.show = function(elementRef) {
+		this.outerWrapper.show();
+		elementRef.fadeIn(300);
+	};
+
+	Product.prototype.hide = function(elementRef) {
+		elementRef.fadeOut(300);
+		this.outerWrapper.hide();
+	};
+
+	Product.prototype.addProductInUser = function() {
+		const inst = this;
+		const validate = this.validateAddProduct();
+		if(validate.status) {
+			const productRef = this.db.doc('users/' + this.addUID + '/products/' + this.addProductIdValue);
+			const currentTimeStamp = new Date().getTime();
+			const addProductDateStamp = new Date(inst.addProductDateValue).getTime();
+			productRef.get().then(doc => {
+				if(doc.exists) {
+					if(doc.data().active) {
+						console.log('Product already present');
+					}
+					else if(currentTimeStamp < addProductDateStamp){
+						productRef.update({
+							active : 1,
+							endStamp : addProductDateStamp,
+							emailSent : false,
+							smsSent : false
+						}).then(() => {
+							displayError('PRODUCT ACTIVATED');
+						}).catch(err => {
+							console.log(err);
+						});
+					}
+					else {
+						displayError('INVALID DATE');
+					}
+				}
+				else {
+					productRef.set({
+						name : inst.addProdctNameValue,
+						active : 1,
+						startStamp : new Date().getTime(),
+						endStamp : new Date(inst.addProductDateValue).getTime(),
+						emailSent : false,
+						smsSent : false
+					}).then(() => {
+						displayError('PRODUCT ADDED');
+					}).catch(error => {
+						console.log(error);
+					});
+				}
+			});
+		}
+		else {
+			displayError(validate.text);
+		}
+	};
+
+	Product.prototype.editProductInUser = function() {
+		const inst = this;
+		const validate = this.validateEditProduct();
+		if(validate.status) {
+			const productRef = this.db.doc('users/' + this.editUID + '/products/' + this.editProductIdValue);
+			const currentTimeStamp = new Date().getTime();
+			const editProductDateStamp = new Date(this.editProductDateValue).getTime();
+			if(currentTimeStamp < editProductDateStamp) {
+				var activeVal = (this.editProductActive)? 1 : 0;
+				productRef.update({
+					active : activeVal,
+					endStamp : new Date(inst.editProductDateValue).getTime(),
+					emailSent : false,
+					smsSent : false
+				}).then(() => {
+					displayError('PRODUCT UPDATED');
+				}).catch(err => {
+					console.log(err);
+				});
+			}
+			else {
+				displayError('INVALID DATE');
+			}
+		}
+		else {
+			displayError(validate.text);
+		}
+	}
+
+	Product.prototype.fillAddProductValues = function() {
+		const inst = this;
+		var flag;
+		//clear old values
+		$('#add-product-select').find('option.data-option').remove();
+		this.db.collection('products').get().then(querySnapshot => {
+			querySnapshot.forEach(doc => {
+				flag = 1;
+				inst.db.collection('users/' + inst.addUID + '/products').get().then(querySnapshot1 => {
+					querySnapshot1.forEach(doc1 => {
+						if(doc1.id === doc.id) {
+							if(doc1.data().active) {
+								flag = 0;
+							}
+						}
+					});
+					if(flag) {
+						$("<option data-id='" + doc.id + "' class='data-option product-option'>").appendTo('#add-product-select').text(doc.data().name);
+					}
+				});
+			});
+		});
+	};
+
+	Product.prototype.fillEditProductValues = function() {
+		//clear old values
+		$('#edit-product-select').find('option.data-option').remove();
+		this.db.collection('users/' + this.editUID + '/products').get().then(querySnapshot => {
+			querySnapshot.forEach(doc => {
+				if(doc.data().active) {
+					$("<option data-id='" + doc.id + "' class='data-option product-option'>").appendTo('#edit-product-select').text(doc.data().name);
+				}
+				else {
+					$("<option data-id='" + doc.id + "' class='data-option product-expired product-option'>").appendTo('#edit-product-select').text(doc.data().name);
+				}
+			});
+		});
+	};
+
+	Product.prototype.updateEditProductValues = function() {
+		const inst = this;
+		const selectedProductId = $('#edit-product-select').find(':selected').attr('data-id');
+		this.db.doc('users/' + this.editUID + '/products/' + selectedProductId).get().then(doc => {
+			if(doc.exists) {
+				if(doc.data().active) {
+					$('#edit-product-active').prop('checked', true);
+				}
+				else {
+					$('#edit-product-active').prop('checked', false);
+				}
+				const lastDate = new Date(doc.data().endStamp);
+				const dateStr =  (lastDate.getMonth() + 1) + '/' + lastDate.getDate() + '/' + lastDate.getFullYear();
+				$('#edit-product-date').val(dateStr);
+			}
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	Product.prototype.fetchAddProductValues = function() {
+		this.addProdctNameValue = $('#add-product-select').find(':selected').val();
+		this.addProductIdValue = $('#add-product-select').find(':selected').attr('data-id');
+		this.addProductDateValue = $('#add-product-date').val();
+	};
+
+	Product.prototype.fetchEditProductValues = function() {
+		this.editProductIdValue = $('#edit-product-select').find(':selected').attr('data-id');
+		this.editProductDateValue = $('#edit-product-date').val();
+		this.editProductActive = $('#edit-product-active').is(':checked');
+	};
+
+	Product.prototype.validateAddProduct = function() {
+		var message;
+		if(this.addProductNameValue === 'Select Product' || this.addProductIdValue === '' || this.addProductDateValue === '') {
+			message = {
+				status : 0,
+				text : 'PLEASE FILL IN ALL THE FIELDS'
+			};
+			return message;
+		}
+		message = {
+			status : 1,
+			text : 'RESULT_OK'
+		};
+		return message;
+	};
+
+	Product.prototype.validateEditProduct = function() {
+		var message;
+		if(this.editProductNameValue === 'Select Product' || this.editProductIdValue === '' || this.editProductDateValue === '') {
+			message = {
+				status : 0,
+				text : 'PLEASE FILL IN ALL THE FIELDS'
+			};
+			return message;
+		}
+		message = {
+			status : 1,
+			text : 'RESULT_OK'
+		};
+		return message;
+	};
+
+	//FUCNTION TO DISPLAY TEXT FLOATING AT THE TOP
+	function displayError(msg) {
+		$('html, body').scrollTop(0);
+		$('#error-container').html(msg);
+		$('#error-container').fadeIn();
+		var timer = setInterval(function() {
+			$('#error-container').fadeOut();
+			clearInterval(timer);
+		}, 4000);
+	};
+
+	$(document).ready(function() {
+		//Get user
+		firebase.auth().onAuthStateChanged(function(user) {
+			if(user) {
+				//User is signed in
+				const product = new Product(user);
+			}
+			else {
+				//User is not signed in
+				window.location.replace('/');
+			}
+		});
+	});
+
+</script>
+</head><body>
+	<div id="outer-wrapper"></div>
+	<div id="add-product-container" class="container floating-container">
+		<div class="floating-container-bar">
+			ADD PRODUCT
+			<div id="close-add-product" class='floating-close-container' class="inner-container">
+				<img src="/resources/white_cross.png" alt="Close" class="floating-close">
+			</div>
+			<div class="clearfix"></div>
+		</div>
+		<div class="container">
+			<div class="container form-container">
+				<div class="container input-container">
+					<select id="add-product-select">
+						<option>Select Product</option>
+						<!-- add products -->
+					</select>
+				</div>
+				<div class="container input-container">
+					<input type="text" id="add-product-date" placeholder="Active Till">
+				</div>
+				<div class="container">
+					<button type="button" id="create-product-button">ADD</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div id="edit-product-container" class="container floating-container">
+		<div class="floating-container-bar">
+			EDIT PRODUCT
+			<div id="close-edit-product" class='floating-close-container' class="inner-container">
+				<img src="/resources/white_cross.png" alt="Close" class="floating-close">
+			</div>
+			<div class="clearfix"></div>
+		</div>
+		<div class="container">
+			<div class="container form-container">
+				<div class="container input-container">
+					<select id="edit-product-select">
+						<option>Select Product</option>
+					</select>
+				</div>
+				<div class="container input-container" id="product-active-status-container">
+					Active : <input type="checkbox" id="edit-product-active">
+				</div>
+				<div class="container input-container">
+					<input type="text" id="edit-product-date" placeholder="Active Till">
+				</div>
+				<div class="container">
+					<button type="button" id="change-product-button">CHANGE</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div id="outer-container" class="container">
+		<div class="loader"></div>
+		<div id="error-container"></div>
+		<div id="header-container" class="container">
+			<header class="container">
+				<div id="header-content" class="container center">
+					<a href="index.html" target="_self">
+						<div class="favicon-container inner-container img-container">
+							<img src="/resources/favicon.png" alt="Nlyse" class="favicon-img">
+						</div>
+					</a>
+					<div id="nav-container" class="inner-container">
+						<div id="nav-container-signin" class="inner-container">
+							<div id="nav-signin" class="container img-container nav-content">
+								<span id="user-display-name"><!-- Script --></span>
+								<img src="/resources/profile_placeholder.png" alt="User" class="profile-placeholder">
+							</div>
+							<div class="dropdown" id="nav-dropdown">
+								<div class="dropdown-attach"></div>
+								<ul class="dropdown-list">
+									<li><a href="/main_account.html"><img src="/resources/settings_icon.png">Account</a></li>
+									<li id="nav-signin-icon"><a href="/signin.html" target="_self"><img src="/resources/profile_placeholder_invert.png">Sign In</a></li>
+									<li id="nav-signout-icon"><img src="/resources/profile_placeholder_invert.png">Sign Out <span id="nav-signout-name"><!--Username--></span></li>
+									<!-- CHANGE SIGN IN TO 'SIGNOUT USERNAME', IF USER SIGNED IN -->
+								</ul>
+							</div>
+						</div>
+					</div>
+					<div class="clearfix"></div>
+				</div>
+			</header>
+		</div>
+		<div id="main-container" class="container">
+			<main class="container">
+				<div id="main-content" class="container">
+					<section id="section-0" class="inner-container">
+						<div id="section-0-content" class="container section-content">
+							<div id="section-0-heading-container" class="container">
+								<h1 class="container">Nlyze Console</h1>
+							</div>
+							<div id="section-0-text-container" class="container">
+								<ul id="console-list">
+									<div class="console-list-item-container container">
+										<div class="container console-list-section">
+											<div class="console-dropdown-trigger container">Users</div>
+											<div class="console-dropdown container">
+												<div id="console-list-user-auth" class="console-list-item container">
+													<a href="/nlyze_user_auth.html">Auth</a>
+												</div>
+												<div id="console-list-user-product" class="console-list-item container">
+													<a href="/nlyze_user_product.html">Products</a>
+												</div>
+											</div>
+										</div>
+										<div id="console-list-product" class="console-list-item console-list-section container">
+											<a href='/nlyze_products.html'>Products</a>
+										</div>
+									</div>
+								</ul>
+							</div>
+						</div>
+					</section>
+					<section id="section-1" class="container">
+						<div id="section-1-content" class="container section-content center">
+							<div id="section-1-heading-container" class="container">
+								<h1>Products</h1>
+							</div>
+							<div class="container">
+								<!-- Component Starts -->
+								<div id="component-container" class="container">
+									<div class="component-table-container" class="container">
+										<table class="component-table" id="user-product-table">
+											<tr><th>EMAIL</th><th>ACTION</th></tr>
+											<!-- add user product info -->
+										</table>
+									</div>
+									<div class="component-table-footer" class="container"></div>
+								</div>
+								<!-- Component Ends -->
+							</div>
+						</div>
+					</section>
+					<div class="clearfix"></div>
+				</div>
+			</main>
+		</div>
+		<div id="footer-container" class="container">
+			<footer class="container">
+				<div id="footer-content" class="container center">
+					<div id="aboutus-summary" class="inner-container">
+						<h4>About Us</h4>
+						<!-- Write About Us Summary Here -->
+					</div>
+					<div class="contactus-summary inner-container">
+						<h4>Contact Us</h4>
+						<div class="container contact-container">
+							<div class="inner-container img-container contact-icon">
+								<img src="/resources/phone_icon.png" alt="Phone : ">
+							</div>
+							519-757-2531
+						</div>
+						<div class="container contact-container">
+							<div class="inner-container img-container contact-icon">
+								<img src="/resources/mail_icon.png" alt="Email : ">
+							</div>
+							sunil@nlyze.com
+						</div>
+						<div class="container contact-container">
+							<div class="inner-container img-container contact-icon">
+								<img src="/resources/home_icon.png" alt="Address : ">
+							</div>
+							43, Coxwell Cres<br>Brantford, ON, N3P1P5<br>Canada.
+						</div>
+					</div>
+					<div class="clearfix"></div>
+					<div id="copyright" class="container">
+						<!-- Copyright display -->
+					</div>
+				</div>
+			</footer>
+		</div>
+	</div>
+</body></html>
+
+
+
+
+
+
+
+
+

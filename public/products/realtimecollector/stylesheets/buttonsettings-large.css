@@ -1,0 +1,19 @@
+#outer-wrapper { position: fixed; width: 100%; height: 100%; z-index: 9; display: none; background-color: rgba(0,0,0,0.7); }
+#floating-container { position: fixed; top: 10%; left: 17%; width: 900px; z-index: 99; background-color: #fff; display: none; }
+#floating-heading-container { border-bottom: 1px solid #c7c7c7; padding: 10px; background-color: #1daeeb; }
+#floating-heading { font-family: 'Asap', sans-serif; color: #fff; }
+#floating-close-container { float: right; }
+#floating-close { width: 30px; height: 30px; }
+.floating-about { margin: 10px; font-family: 'Asap', sans-serif; }
+.floating-content { margin: auto; margin-top: 30px; width: 70%; padding: 10px; }
+.floating-text { margin-top: 20px; }
+.floating-input-container { float: right; }
+.floating-input { border: 1px solid #c7c7c7; border-radius: 0px; padding: 5px; margin: 10px 0px; }
+#floating-save-button { width: auto; font-family: 'Asap', sans-serif; padding: 15px; font-size: 110%; float: right; margin-top: 40px; border-radius: 0px; }
+#bttn-country-code { width: 120px; }
+#bttn-click-freq, #bttn-click-time { width: 70px; border: 1px solid #c7c7c7; text-align: center; }
+#main-table-container { width: 100%; }
+#main-table td { padding: 25px 10px; border: none; text-align: center; }
+#bttn-icon { width: 50px; height: auto; }
+.battery-icon, .signal-icon, .bell-icon { width: 20px; height: auto; margin-left: 10px; vertical-align: middle; }
+.bell-icon { cursor: pointer; }

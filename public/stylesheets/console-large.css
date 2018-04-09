@@ -1,0 +1,38 @@
+
+
+#main-content { position: relative; }
+#section-0 { position: absolute; top: 0px; bottom: 0px; left: 0px; width: 20%; background-color: #313e44; }
+#section-0-content { padding: 20px 30px; position: fixed; width: 20%; z-index: 9; }
+#section-0-heading-container { border-bottom: 1px solid #7c7c7c; margin-bottom: 20px; padding: 5px 10px; }
+#section-0-heading-container h1 { color: #1daeeb; font-family: 'Asap', sans-serif; }
+#section-0-text-container ul { list-style-type: none; }
+#section-0-text-container li { margin-bottom: 15px; cursor: pointer; }
+#section-0-text-container li:hover a { background-color: rgba(0,0,0,0.5); }
+#section-0-text-container a { display: block; color: #c7c7c7; padding: 10px; border-radius: 7px; -webkit-transition: background-color 0.2s; -moz-transition: background-color 0.2s; -ms-transition: background-color 0.2s; -o-transition: background-color 0.2s; transition: background-color 0.2s; color: rgb(216,216,216); font-family: 'Asap', sans-serif; }
+#inst-product-link { background-color: rgba(0,0,0,0.2); }
+#section-0-text-container a img { vertical-align: middle; width: 20px; height: auto; margin-right: 5px; }
+.products-list { display: none; }
+#section-1 { float: right; width: 79%; }
+#section-1-content { padding: 30px; }
+#section-1-heading-container { text-align: center; margin-bottom: 50px; }
+#section-1-heading-container h1 { font-size: 250%; font-weight: lighter; color: rgb(216,216,216); }
+.flex-container { display: -webkit-box; display: -moz-box; display: -webkit-flex; display: -ms-flexbox; display: flex; -webkit-flex-direction: row; flex-direction: row; -webkit-flex-wrap: wrap; flex-wrap: wrap; -webkit-justify-content: flex-start; justify-content: flex-start; }
+.card { width: 48%; height: 500px; position: relative; margin-right: 10px; }
+.card-heading h4 { font-family: 'Asap', sans-serif; }
+.card-img { width: 70px; height: 70px; margin-bottom: 10px; }
+.card-action { padding: 10px; margin-top: 10px; position: absolute; bottom: 7%; right: 10%; -webkit-transition: background-color 0.2s; -moz-transition: background-color 0.2s; -ms-transition: background-color 0.2s; -o-transition: background-color 0.2s; transition: background-color 0.2s; }
+.card-action:hover { background-color: rgb(243,243,243); }
+.card-action a { color: #1daeeb; }
+@media screen and (min-width: 1499px) {
+	.card { width: 32%; }
+}
+@media screen and (min-width: 1500px) and (max-width: 1699px) {
+	.flex-container { padding: 50px 100px; }
+}
+@media screen and (min-width: 1700px) {
+	.flex-container { padding: 100px 200px; }
+}
+
+
+
+

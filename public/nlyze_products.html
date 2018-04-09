@@ -1,0 +1,363 @@
+
+<!--
+	TODO: FILL IN THE BLANKS(META)
+	DESCRIPTION
+	OWNER
+	FAVICON
+
+	CONVERT HTML TO JSP
+ -->
+ <!--
+ 	.container - block divs
+ 	.inner-container - inline-block divs
+ 	Every section of the page contains 'title' and/or 'content', enclosed within that section's container
+ -->
+<!DOCTYPE html><html lang="en-US" dir="ltr"><head><meta charset="utf-8"><title>Nlyze Console</title><meta name="description" content="" ><meta name="owner" content=""><meta name="author" content="Chaitanya Bhardwaj" ><base href="nlyze_products.html" target="_self" ><meta name="referrer" content="origin-when-cross-origin" ><link rel="icon" type="image/x-icon" href="/resources/favicon_title.png">
+<link rel="stylesheet" type="text/css" href="stylesheets/basicstyle.css" />
+<link rel="stylesheet" type="text/css" media="screen and (min-width: 1001px)" href="stylesheets/console-large.css" />
+<link rel="stylesheet" type="text/css" href="stylesheets/nlyze_products_large.css">
+<meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<script src="/scripts/jquery-3.2.1.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-functions.js"></script>
+<script src="/scripts/main.js"></script>
+<script src="/scripts/inspector.js"></script>
+<script>
+	'use strict';
+	//Initialize Product
+	function Product(user) {
+		const inst = this;
+		//authenticate admin
+		this.userRef = user;
+		this.authAdmin();
+		this.db = firebase.firestore();
+		//shortcuts to dom elements
+		this.outerWrapper = $('#outer-wrapper');
+		//add event listeners
+		$('#add-product-button').click(function() {
+			inst.show($('#add-product-container'));
+		});
+		$('#create-product-button').click(function() {
+			$('.loader').css('display', 'block');
+			inst.fetchNewProductValues();
+			inst.createNewProduct();
+		});
+		$('#close-add-product').click(function() {
+			inst.hide($('#add-product-container'));
+		});
+	};
+
+	Product.prototype.authAdmin = function() {
+		const inst = this;
+		const authResult = firebase.functions().httpsCallable('authAdmin');
+		authResult({}).then(result => {
+			if(result.data) {
+				inst.initLayout();
+				$('.loader').css('display', 'none');
+			}
+			else {
+				window.location.replace('/');
+			}
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	Product.prototype.initLayout = function() {
+		//Clear all fields & data
+		$('#product-table').find('tr.data-row').remove();
+		//reterive product data
+		var settingsBttn;
+		return this.db.collection('products').get().then(querySnapshot => {
+			querySnapshot.forEach(doc => {
+				settingsBttn = '<button type="button" class="product-setting-button" data-id="' + doc.id + '">CONFIG</button>';
+				$("<tr class='data-row'>").appendTo("table#product-table")
+					.append($("<td class='td-product-name'>").text(doc.data().name))
+					.append($("<td class='td-link-name'>").text(doc.data().linkName))
+					.append($("<td class='td-notify-before'>").text((doc.data().notifyExpirationBefore / 86400000) + ' days'))
+					.append($("<td class='td-settings'>").html(settingsBttn));
+			});
+		});
+	};
+
+	Product.prototype.show = function(elementRef) {
+		this.outerWrapper.show();
+		elementRef.fadeIn(300);
+	};
+
+	Product.prototype.hide = function(elementRef) {
+		elementRef.fadeOut(300);
+		this.outerWrapper.hide();
+	};
+
+	Product.prototype.createNewProduct = function() {
+		const inst = this;
+		const validate = this.validateNewProduct();
+		if(validate.status) {
+			const createProduct = firebase.functions().httpsCallable('createNewProduct');
+			createProduct({
+				productName : inst.addProductNameValue,
+				linkName : inst.addLinkNameValue,
+				codeName : inst.addCodeNameValue,
+				notifyBefore : inst.addNotifyBeforeValue
+			}).then(result => {
+				$('.loader').css('display', 'none');n
+				if(result.data) {
+					inst.initLayout();
+					displayError('PRODUCT ADDED');
+				}
+				else {
+					displayError('AN ERROR OUCCURRED');
+				}
+			}).catch(err => {
+				console.log(err);
+			});
+		}
+		else {
+			displayError(validate.text);
+		}
+	};
+
+	Product.prototype.fetchNewProductValues = function() {
+		this.addProductNameValue = $('#add-product-name').val().trim();
+		this.addLinkNameValue = $('#add-link-name').val().trim();
+		this.addCodeNameValue = $('#add-code-name').val().trim();
+		this.addNotifyBeforeValue = $('#add-product-notify').val().trim();
+	};
+
+	Product.prototype.fillUserValues = function(elementRef) {
+		this.userAuthUID = elementRef.attr('data-id');
+		return this.db.doc('users/' + this.userAuthUID).get().then(doc => {
+			if(doc.exists) {
+				$('.auth-user-email').text(doc.data().user_email);
+			}
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	Product.prototype.validateNewProduct = function() {
+		var message;
+		if(this.addProductNameValue === undefined) {
+			message = {
+				status : 0,
+				text : 'WELCOME'
+			};
+			return message;
+		}
+		if(this.addProductNameValue === '' || this.addLinkNameValue === '' || this.addNotifyBeforeValue === '' || this.addCodeNameValue === '') {
+			message = {
+				status : 0,
+				text : 'PLEASE FILL IN ALL THE FIELDS'
+			};
+			return message;
+		}
+		if(!$.isNumeric(this.addNotifyBeforeValue)) {
+			message = {
+				status : 0,
+				text : 'INVALID NOTIFY DATE'
+			};
+			return message;c
+		}
+		message = {
+			status : 1,
+			text : 'RESULT_OK'
+		};
+		return message;
+	};
+
+	//FUCNTION TO DISPLAY TEXT FLOATING AT THE TOP
+	function displayError(msg) {
+		$('html, body').scrollTop(0);
+		$('#error-container').html(msg);
+		$('#error-container').fadeIn();
+		var timer = setInterval(function() {
+			$('#error-container').fadeOut();
+			clearInterval(timer);
+		}, 4000);
+	};
+
+	$(document).ready(function() {
+		//Get user
+		firebase.auth().onAuthStateChanged(function(user) {
+			if(user) {
+				//User is signed in
+				const product = new Product(user);
+			}
+			else {
+				//User is not signed in
+				window.location.replace('/');
+			}
+		});
+	});
+
+</script>
+</head><body>
+	<div id="outer-wrapper"></div>
+	<div id="add-product-container" class="container floating-container">
+		<div class="floating-container-bar">
+			ADD PRODUCT
+			<div id="close-add-product" class='floating-close-container' class="inner-container">
+				<img src="/resources/white_cross.png" alt="Close" class="floating-close">
+			</div>
+			<div class="clearfix"></div>
+		</div>
+		<div class="container">
+			<div class="container form-container">
+				<div class="container input-container">
+					<input type="text" id="add-product-name" placeholder="Product Name">
+				</div>
+				<div class="container input-container">
+					<input type="text" id="add-link-name" placeholder="Link Name">
+				</div>
+				<div class="container input-container">
+					<input type="text" id="add-code-name" placeholder="Code Name">
+				</div>
+				<div class="container input-container">
+					<input type="number" id="add-product-notify" placeholder="Notify Before">
+				</div>
+				<div class="container">
+					<button type="button" id="create-product-button">CREATE PRODUCT</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div id="outer-container" class="container">
+		<div class="loader"></div>
+		<div id="error-container"></div>
+		<div id="header-container" class="container">
+			<header class="container">
+				<div id="header-content" class="container center">
+					<a href="index.html" target="_self">
+						<div class="favicon-container inner-container img-container">
+							<img src="/resources/favicon.png" alt="Nlyse" class="favicon-img">
+						</div>
+					</a>
+					<div id="nav-container" class="inner-container">
+						<div id="nav-container-signin" class="inner-container">
+							<div id="nav-signin" class="container img-container nav-content">
+								<span id="user-display-name"><!-- Script --></span>
+								<img src="/resources/profile_placeholder.png" alt="User" class="profile-placeholder">
+							</div>
+							<div class="dropdown" id="nav-dropdown">
+								<div class="dropdown-attach"></div>
+								<ul class="dropdown-list">
+									<li><a href="/main_account.html"><img src="/resources/settings_icon.png">Account</a></li>
+									<li id="nav-signin-icon"><a href="/signin.html" target="_self"><img src="/resources/profile_placeholder_invert.png">Sign In</a></li>
+									<li id="nav-signout-icon"><img src="/resources/profile_placeholder_invert.png">Sign Out <span id="nav-signout-name"><!--Username--></span></li>
+									<!-- CHANGE SIGN IN TO 'SIGNOUT USERNAME', IF USER SIGNED IN -->
+								</ul>
+							</div>
+						</div>
+					</div>
+					<div class="clearfix"></div>
+				</div>
+			</header>
+		</div>
+		<div id="main-container" class="container">
+			<main class="container">
+				<div id="main-content" class="container">
+					<section id="section-0" class="inner-container">
+						<div id="section-0-content" class="container section-content">
+							<div id="section-0-heading-container" class="container">
+								<h1 class="container">Nlyze Console</h1>
+							</div>
+							<div id="section-0-text-container" class="container">
+								<ul id="console-list">
+									<div class="console-list-item-container container">
+										<div class="container console-list-section">
+											<div class="console-dropdown-trigger container">Users</div>
+											<div class="console-dropdown container">
+												<div id="console-list-user-auth" class="console-list-item container">
+													<a href="/nlyze_user_auth.html">Auth</a>
+												</div>
+												<div id="console-list-user-product" class="console-list-item container">
+													<a href="/nlyze_user_product.html">Products</a>
+												</div>
+											</div>
+										</div>
+										<div id="console-list-product" class="console-list-item console-list-section container">
+											<a href='/nlyze_products.html'>Products</a>
+										</div>
+									</div>
+								</ul>
+							</div>
+						</div>
+					</section>
+					<section id="section-1" class="container">
+						<div id="section-1-content" class="container section-content center">
+							<div id="section-1-heading-container" class="container">
+								<h1>Products</h1>
+							</div>
+							<div class="container">
+								<!-- Component Starts -->
+								<div id="component-container" class="container">
+									<div id="component-action-container" class="container">
+										<div class="component-action">
+											<button type="button" id="add-product-button">ADD PRODUCT</button>
+											<div class="clearfix"></div>
+										</div>
+									</div>
+									<div class="component-table-container" class="container">
+										<table class="component-table" id="product-table">
+											<tr><th>Product Name</th><th>Link Name</th><th>Notify Before</th><th><!--Settings--></th></tr>
+											<!-- add products info -->
+										</table>
+									</div>
+									<div class="component-table-footer" class="container"></div>
+								</div>
+								<!-- Component Ends -->
+							</div>
+						</div>
+					</section>
+					<div class="clearfix"></div>
+				</div>
+			</main>
+		</div>
+		<div id="footer-container" class="container">
+			<footer class="container">
+				<div id="footer-content" class="container center">
+					<div id="aboutus-summary" class="inner-container">
+						<h4>About Us</h4>
+						<!-- Write About Us Summary Here -->
+					</div>
+					<div class="contactus-summary inner-container">
+						<h4>Contact Us</h4>
+						<div class="container contact-container">
+							<div class="inner-container img-container contact-icon">
+								<img src="/resources/phone_icon.png" alt="Phone : ">
+							</div>
+							519-757-2531
+						</div>
+						<div class="container contact-container">
+							<div class="inner-container img-container contact-icon">
+								<img src="/resources/mail_icon.png" alt="Email : ">
+							</div>
+							sunil@nlze.com
+						</div>
+						<div class="container contact-container">
+							<div class="inner-container img-container contact-icon">
+								<img src="/resources/home_icon.png" alt="Address : ">
+							</div>
+							43, Coxwell Cres<br>Brantford, ON, N3P1P5<br>Canada.
+						</div>
+					</div>
+					<div class="clearfix"></div>
+					<div id="copyright" class="container">
+						<!-- Copyright display -->
+					</div>
+				</div>
+			</footer>
+		</div>
+	</div>
+</body></html>
+
+
+
+
+
+
+
+
+
