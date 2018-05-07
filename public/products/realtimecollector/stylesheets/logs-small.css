@@ -1,0 +1,16 @@
+input, select { margin-bottom: 10px; }
+#add-log-title-container { margin-top: 15px; margin-bottom: 3px; }
+#add-log-title { font-size: 105%; }
+#main-table-container { display: none; }
+#table-action { margin-top: 20px; margin-bottom: 50px; width: 90%; cursor: pointer; }
+#table-action-1-container { width: 100%; text-align: center; background-color: #1daeeb; }
+#table-button-1 { width: 250px; color: #fff; }
+/*#add-log-input-5 { position: relative; }*/
+@media screen and (min-width: 550px) {
+	#main-table-container { display: block; }
+	#table-action { width: 50%; }
+}
+@media screen and (max-width: 615px) {
+	.action-container { float: none; display: block; width: 100%; margin: auto; margin-top: 5px; }
+	.action-container button, .action-container a { width: 100%; border-radius: 2px; padding: 7px; }
+}

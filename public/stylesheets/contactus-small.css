@@ -1,0 +1,27 @@
+
+#section-0-content { position: relative; padding: 0px; }
+#section-0-heading-container { position: absolute; top: 42%; left: 42%; font-family: 'Asap', sans-serif; color: #fff; background-color: rgba(0,0,0,0.7); padding: 7px; border-left: 5px solid #1daeeb; font-size: 50%; }
+#section-1 { width: 100%; margin-bottom: 50px; }
+#section-1-content { padding: 30px; }
+#section-3-content { padding: 50px; }
+#section-3-heading-container { text-align: center; }
+#section-3-heading-container p { font-size: 140%; font-weight: lighter; color: #333333; }
+#section-3-heading-container img { width: 25px; height: auto; vertical-align: middle; }
+#section-3-heading-lighter { font-size: 100%; font-weight: lighter; color: #333333; }
+.form-container { width: 85%; margin: auto; }
+.input-container { display: block; margin-top: 15px; }
+.form-container input, .form-container select { font-weight: bolder; }
+.form-container input, textarea, button { border: 1px solid #ccc; border-radius: 7px; padding: 5px; font-size: 100%; width: 100%; }
+.form-container textarea { resize: none; min-height: 250px; }
+.form-container button { width: 100px; background-color: #1daeeb; border: none; -webkit-box-shadow: 0px 0px 5px #7c7c7c; -moz-box-shadow: 0px 0px 5px #7c7c7c; -ms-box-shadow: 0px 0px 5px #7c7c7c; -o-box-shadow: 0px 0px 5px #7c7c7c; box-shadow: 0px 0px 5px #7c7c7c; font-family: 'Asap', sans-serif; color: #fff; padding: 10px; }
+#section-2 { display: none; }
+.contact-container h3 { font-family: 'Asap', sans-serif; }
+/*media rule*/
+@media screen and (min-width: 550px) and (max-width: 799px) {
+	.form-container { width: 70%; }
+	#section-0-heading-container { top: 45%; left: 45%; font-size: 60%; }
+}
+@media screen and (min-width: 800px) {
+	.form-container { width: 60%; }
+	#section-0-heading-container { font-size: 100%; }
+}

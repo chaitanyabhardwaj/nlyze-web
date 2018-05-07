@@ -1,0 +1,26 @@
+#outer-wrapper { position: fixed; width: 100%; height: 100%; z-index: 9; display: none; background-color: rgba(0,0,0,0.7); }
+input, select { margin-bottom: 10px; }
+select { height: 30px; }
+#floating-container { position: fixed; top: 5%; left: 10%; width: 80%; max-height: 90%; overflow: auto; z-index: 99; background-color: #fff; display: none; }
+#floating-heading-container { border-bottom: 1px solid #c7c7c7; padding: 5px 10px; background-color: #1daeeb; }
+#floating-heading { font-family: 'Asap', sans-serif; color: #fff; font-size: 105%; }
+#floating-close-container { float: right; }
+#floating-close { width: 20px; height: 20px; }
+.floating-about { margin: 5px 10px; font-family: 'Asap', sans-serif; }
+.floating-content { margin: auto; margin-top: 10px; width: 90%; padding: 5px; }
+.floating-text { margin-top: 15px; }
+.floating-input-container { float: right; }
+.floating-input { border: 1px solid #c7c7c7; border-radius: 0px; padding: 2px; margin: 5px 0px; }
+#floating-save-button { width: auto; font-family: 'Asap', sans-serif; padding: 15px; font-size: 90%; float: right; margin-top: 40px; border-radius: 0px; }
+#bttn-country-code { width: 120px; }
+#bttn-click-freq, #bttn-click-time { width: 70px; border: 1px solid #c7c7c7; text-align: center; }
+#main-table-container { width: 100%; }
+#main-table td { padding: 25px 10px; border: none; text-align: center; }
+#bttn-icon { width: 50px; height: auto; }
+.battery-icon, .signal-icon, .bell-icon { width: 20px; height: auto; margin-left: 10px; vertical-align: middle; }
+.bell-icon { cursor: pointer; }
+@media screen and (max-width: 615px) {
+	.floating-input-container { float: none; width: 100%; }
+	.action-container { float: none; display: block; width: 100%; margin: auto; margin-top: 5px; }
+	.action-container button, .action-container a { width: 100%; border-radius: 2px; padding: 7px; }
+}

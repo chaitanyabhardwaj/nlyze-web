@@ -11,9 +11,12 @@
  	Every section of the page contains 'title' and/or 'content', enclosed within that section's container
  -->
 <!DOCTYPE html><html lang="en-US" dir="ltr"><head><meta charset="utf-8"><title>Smartdroid Collector</title><meta name="description" content="" ><meta name="owner" content=""><meta name="author" content="Chaitanya Bhardwaj" ><base href="buttonsettings.html" target="_self" ><meta name="referrer" content="origin-when-cross-origin" ><link rel="icon" type="image/x-icon" href="/resources/favicon_title.png">
-<link rel="stylesheet" type="text/css" href="stylesheets/basicstyle.css">
-<link rel="stylesheet" type="text/css" href="stylesheets/buttonsettings-large.css">
-<link rel="stylesheet" type="text/css" href="stylesheets/index-large.css">
+<link rel="stylesheet" type="text/css" media="screen and (max-width: 900px)" href="stylesheets/basicstyle-small.css" />
+<link rel="stylesheet" type="text/css" media="screen and (min-width: 901px)" href="stylesheets/basicstyle-large.css" />
+<link rel="stylesheet" type="text/css" media="screen and (max-width: 900px)" href="stylesheets/index-small.css" />
+<link rel="stylesheet" type="text/css" media="screen and (min-width: 901px)" href="stylesheets/index-large.css" />
+<link rel="stylesheet" type="text/css" media="screen and (max-width: 900px)" href="stylesheets/buttonsettings-small.css" />
+<link rel="stylesheet" type="text/css" media="screen and (min-width: 901px)" href="stylesheets/buttonsettings-large.css" />
 <link rel="stylesheet" type="text/css" href="/scripts/jquery-ui-1.12.1.custom/jquery-ui.min.css">
 <meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <script src="/scripts/jquery-3.2.1.min.js"></script>
@@ -207,9 +210,9 @@
 					$("<tr class='data-row'>").appendTo("table.startAppend")
 						.append($("<td class='td-name'>").html(buttonName))
 						.append($("<td class='td-long-id'>").text(data.longId))
-						.append($("<td class='td-battery'>").html(bttnBattery + "<img src='/products/realtimecollector/resources/battery_icon_" + batteryImg + ".png' class='battery-icon'>"))
-						.append($("<td class='td-signal'>").html(d.signal + '%' + "<img src='/products/realtimecollector/resources/signal_icon.png' class='signal-icon'>"))
-						.append($("<td class='td-last-pressed'>").text(lastPressedVal))
+						.append($("<td class='td-battery large'>").html(bttnBattery + "<img src='/products/realtimecollector/resources/battery_icon_" + batteryImg + ".png' class='battery-icon'>"))
+						.append($("<td class='td-signal large'>").html(d.signal + '%' + "<img src='/products/realtimecollector/resources/signal_icon.png' class='signal-icon'>"))
+						.append($("<td class='td-last-pressed large'>").text(lastPressedVal))
 						.append($("<td class='td-notification'>").html("<img src='/resources/settings_icon.png' alt='Configure' class='bell-icon' data-bttn-id='" + data.longId + "'>"));
 				});
 			});
@@ -232,6 +235,9 @@
 	};
 
 	$(document).ready(function() {
+		//main drawer
+		const mainDrawer = new MainDrawer('main-drawer');
+		mainDrawer.closeIfClickedElsewhere();
 		//Get user
 		firebase.auth().onAuthStateChanged(function(user) {
 			if(user) {
@@ -267,7 +273,7 @@
 		</div>
 		<div class="container floating-content">
 			<div class="inner-container floating-text">
-				Log button click from
+				Start logging from
 			</div>
 			<div class="inner-container floating-input-container">
 				<input type="text" name="bttn-count-date" class="floating-input" id="bttn-count-date" placeholder="Date?">
@@ -540,21 +546,42 @@
 						</div>
 					</a>
 					<div id="nav-container" class="inner-container">
+						<div id="nav-container-products" class="inner-container nav-content">
+							<div id="nav-products"><a href="/products.html" target="_self">Products</a></div>
+							<!-- OPTIONAL DROPDOWN -->
+						</div>
+						<div id="nav-container-aboutus" class="inner-container nav-content">
+							<div id="nav-aboutus"><a href="/aboutus.html" target="_self">About Us</a></div>
+							<!-- OPTIONAL DROPDOWN -->
+						</div>
+						<div id="nav-container-support" class="inner-container nav-content">
+							<div id="nav-support"><a href="/support.html" target="_self">Support</a></div>
+							<!-- OPTIONAL DROPDOWN -->
+						</div>
+						<div id="nav-container-contactus" class="inner-container nav-content">
+							<div id="nav-contactus"><a href="/contactus.html" target="_self">Contact Us</a></div>
+							<!-- OPTIONAL DROPDOWN -->
+						</div>
+						<div id="nav-container-console" class="inner-container nav-content">
+							<div id="nav-console"><a href="/console.html">GO TO CONSOLE</a></div>
+							<!-- OPTIONAL DROPDOWN -->
+						</div>
 						<div id="nav-container-signin" class="inner-container">
 							<div id="nav-signin" class="container img-container nav-content">
-								<span id="user-display-name"><!-- Script --></span>
 								<img src="/resources/profile_placeholder.png" alt="User" class="profile-placeholder">
 							</div>
 							<div class="dropdown" id="nav-dropdown">
 								<div class="dropdown-attach"></div>
 								<ul class="dropdown-list">
-									<li><a href="/main_account.html"><img src="/resources/settings_icon.png">Account</a></li>
-									<li id="nav-signin-icon"><a href="/signin.html" target="_self"><img src="/resources/profile_placeholder_invert.png">Sign In</a></li>
-									<li id="nav-signout-icon"><img src="/resources/profile_placeholder_invert.png">Sign Out <span id="nav-signout-name"><!--Username--></span></li>
-									<!-- CHANGE SIGN IN TO 'SIGNOUT USERNAME', IF USER SIGNED IN -->
+									<li><a href="/main_account.html" target="_self"><img src="/resources/settings_icon.png" class="small"><img src="/resources/settings_icon_invert.png" class="large">Account</a></li>
+									<li id="nav-signin-icon"><a href="/signin.html" target="_self"><img src="/resources/profile_placeholder.png" class="small"><img src="/resources/profile_placeholder_invert.png" class="large">Sign In</a></li>
+									<li id="nav-signout-icon"><img src="/resources/profile_placeholder.png" class="small"><img src="/resources/profile_placeholder_invert.png" class="large">Sign Out <span id="nav-signout-name"><!--Username--></span></li>
 								</ul>
 							</div>
 						</div>
+					</div>
+					<div id="nav-drawer" class="inner-container img-container">
+						<img src="/resources/drawer_icon.png" alt="DROPDOWN">
 					</div>
 					<div class="clearfix"></div>
 				</div>
@@ -564,6 +591,10 @@
 			<main class="container">
 				<div id="main-content" class="container">
 					<section id="section-0" class="inner-container">
+						<div id="main-drawer" class="container img-container">
+							<img src="/resources/drawer_1_icon.png" alt="DROPDOWN" class="small">
+						</div>
+						<div class="clearfix"></div>
 						<div id="section-0-content" class="container section-content">
 							<div id="section-0-heading-container" class="container">
 								<h1 class="container">Prodcuts</h1>
@@ -596,9 +627,9 @@
 									<table id="main-table" class="startAppend">
 										<tr><th id="name-col" class="img-container"><img src="/products/realtimecollector/resources/bttn_icon.png" id="bttn-icon" alt="Button Name"></th>
 										<th id="long-id-col">Button ID</th>
-										<th id="battery-col">Battery</th>
-										<th id="signal-col">Signal</th>
-										<th id="last-pressed-col">Last Pressed</th>
+										<th id="battery-col" class="large">Battery</th>
+										<th id="signal-col" class="large">Signal</th>
+										<th id="last-pressed-col" class="large">Last Pressed</th>
 										<th id="notification-col">Configure</th></tr>
 										<!-- SAMPLE ROW SYNTAX
 										<tr class="data-row">

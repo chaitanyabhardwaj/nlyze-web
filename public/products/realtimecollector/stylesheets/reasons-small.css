@@ -1,0 +1,8 @@
+input, select { margin-bottom: 10px; }
+#add-reason-title-container, #edit-reason-title-container { margin-top: 15px; margin-bottom: 3px; }
+#add-reason-title, #edit-reason-title { font-size: 105%; }
+#reason-id-col { width: 25%; }
+@media screen and (max-width: 615px) {
+	.action-container { float: none; display: block; width: 100%; margin: auto; margin-top: 5px; }
+	.action-container button, .action-container a { width: 100%; border-radius: 2px; padding: 7px; }
+}

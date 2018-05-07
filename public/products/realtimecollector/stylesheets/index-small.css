@@ -1,0 +1,50 @@
+
+#main-content { position: relative; }
+#section-0 { position: absolute; top: 0px; bottom: 0px; left: 0px; width: 8%; background-color: #313e44; z-index: 99; overflow: auto; }
+#main-drawer { margin-top: 20px; display: block; float: right; width: 35px; }
+#main-drawer img { width: 7px; height: 27px; float: right; margin-right: 10px; }
+#section-0-content { padding: 20px 30px; position: absolute; width: 100%; z-index: 99; display: none; }
+#section-0-heading-container { border-bottom: 1px solid #7c7c7c; margin-bottom: 20px; padding: 5px 10px; }
+#section-0-heading-container h1 { color: #1daeeb; font-family: 'Asap', sans-serif; font-size: 120%; }
+#section-0-text-container ul { list-style-type: none; }
+#section-0-text-container li { margin-bottom: 15px; cursor: pointer; }
+#section-0-text-container li:hover a { background-color: rgba(0,0,0,0.5); }
+#section-0-text-container a { display: block; color: #c7c7c7; padding: 10px; border-radius: 7px; -webkit-transition: background-color 0.2s; -moz-transition: background-color 0.2s; -ms-transition: background-color 0.2s; -o-transition: background-color 0.2s; transition: background-color 0.2s; color: rgb(216,216,216); font-family: 'Asap', sans-serif; font-size: 90%; }
+#inst-product-link { background-color: rgba(0,0,0,0.2); }
+#section-0-text-container a img { vertical-align: middle; width: 20px; height: auto; margin-right: 5px; }
+.products-list { display: none; }
+#section-1 { float: right; width: 90%; }
+#section-1-content { padding: 30px; }
+#section-1-heading-container { text-align: center; margin-bottom: 10px; width: 85%; }
+#section-1-heading-container h2 { font-size: 120%; font-weight: lighter; color: rgb(216,216,216); }
+#help-container { width: 20px; height: 20px; float: right; margin-left: 10px; }
+#data-lines-text, #data-reasons-text, #data-family-text { min-width: 50px; }
+#data-lines-value, #data-reasons-value, #data-family-value { color: #666; padding: 1px 5px; background-color: #cacaca; border: 1px solid #a7a7a7; border-radius: 2px; text-align: center; font-family: 'Asap', sans-serif; font-size: 70%; font-weight: lighter; }
+.text { font-size: 80%; }
+.flex-container { display: -webkit-box; display: -moz-box; display: -webkit-flex; display: -ms-flexbox; display: flex; -webkit-flex-direction: row; flex-direction: row; -webkit-flex-wrap: wrap; flex-wrap: wrap; -webkit-justify-content: flex-start; justify-content: flex-start; }
+.card { width: 100%; position: relative; }
+.card-heading h4 { font-family: 'Asap', sans-serif; }
+.card-img { width: 70px; height: 70px; margin-bottom: 10px; }
+.card-action { padding: 10px; margin-top: 10px; position: absolute; bottom: 7%; right: 10%; -webkit-transition: background-color 0.2s; -moz-transition: background-color 0.2s; -ms-transition: background-color 0.2s; -o-transition: background-color 0.2s; transition: background-color 0.2s; }
+.card-action:hover { background-color: rgb(243,243,243); }
+.card-action a { color: #1daeeb; }
+#data-entry-container, #report-view-container { width: 100%; }
+#data-entry-container a, #report-view-container a { border-radius: 7px; text-align: center; display: inline-block; width: 100px; background-color: #1daeeb; border: none; -webkit-box-shadow: 0px 0px 5px #7c7c7c; -moz-box-shadow: 0px 0px 5px #7c7c7c; -ms-box-shadow: 0px 0px 5px #7c7c7c; -o-box-shadow: 0px 0px 5px #7c7c7c; box-shadow: 0px 0px 5px #7c7c7c; color: #fff; }
+.card + .card { margin-top: 10px; }
+/*media queries*/
+@media screen and (max-width: 549px) {
+	#section-0-heading-container h1 { font-size: 115%; }
+	#section-0-text-container a { font-size: 80%; }
+	#section-0-text-container a img { width: 15px; }
+	#report-view-text { display: none; }
+	#report-view-action-container { width: 100%; margin: 0px; }
+	#report-view-lines, #report-view-reasons { width: 49%; }
+	#report-view-action-container a { width: 100%; }
+}
+@media screen and (min-width: 550px) {
+	#section-1-heading-container { width: 90%; }
+	#section-1-heading-container h2 { font-size: 150%; }
+	#help-container { width: 30px; height: 30px; }
+	#data-entry-container a { width: 120px; }
+	.text { font-size: 90%; }
+}

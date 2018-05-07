@@ -14,7 +14,7 @@ img { width: 100%; height: auto; }
 .dropdown ul { list-style-type: none; }
 .dropdown li { padding: 10px; cursor: pointer; }
 .dropdown li:hover a { color: #1daeeb; }
-.small { display: none; }
+.small { display: none !important; }
 .dropdown a { color: #333333; display: inline-block; -webkit-transition: color 0.2s; -moz-transition: color 0.2s; -ms-transition: color 0.2s; -o-transition: color 0.2s; transition: color 0.2s; }
 .dropdown li + li { border-top: 0.1px solid #cfcfcf; }
 .dropdown .dropdown-attach { background-color: #fff; border-left: 0.5px solid #cacaca; border-top: 0.5px solid #cacaca; width: 10px; height: 10px; position: absolute; right: 40px; top: -5.5px; -webkit-transform: rotate(45deg); -ms-transform: rotate(45deg); -moz-transform: rotate(45deg); -o-transform: rotate(45deg); transform: rotate(45deg);  }
@@ -37,6 +37,7 @@ header { background-color: rgba(0,0,0,0.8); color: #f7f7f7; padding: 7px; z-inde
 #nav-signin { width: 25px; height: 25px; cursor: pointer; position: relative; top: 7px; }
 #nav-signout-icon { display: none; color: #333333; font-size: 90%; }
 #nav-signout-icon:hover { color: #1daeeb; }
+#nav-drawer { display: none; }
 .section-heading { font-family: 'Asap', sans-serif; font-size: 200%; }
 footer { background-color: rgb(243,243,243); }
 #footer-content { padding: 50px 20px; color: #333333; width: 80%; font-size: 80%; }
@@ -44,12 +45,6 @@ footer { background-color: rgb(243,243,243); }
 .contact-container + .contact-container { margin-top: 10px; }
 footer .contact-icon { width: 12px; height: 20px; vertical-align: middle; }
 footer .contactus-summary { float: right; }
-@media screen and (min-width: 1500px) and (max-width: 1699px) {
-	#header-content, #footer-content { width: 60%; }
-}
-@media screen and (min-width: 1700px) {
-	#header-content, #footer-content { width: 50%; }
-}
 /*
  * DIFF
  */
@@ -69,7 +64,18 @@ td { line-height: 10px; font-family: 'Catamaran', sans-serif; padding: 15px 10px
 input, button { margin: 10px; font-family: 'Catamaran', sans-serif; border: 0.5px solid #c7c7c7; padding: 5px 10px; font-size: 105%; border: 1px solid #ccc; width: 250px; outline: none; border-radius: 7px; }
 button { color: #fff; background-color: #1daeeb; width: 150px; font-family: 'Asap', sans-serif; cursor: pointer; }
 select { margin: 10px; font-family: 'Catamaran', sans-serif; border: 0.5px solid #c7c7c7; background: transparent; padding: 5px 10px; font-size: 16px; border: 1px solid #ccc; height: 40px; -webkit-appearance: none; -moz-appearance: none; appearance: none; background: url(dropdownicon.png) 96% / 10% no-repeat #fff; width: 250px; outline: none; }
-#error-container { border-radius: 7px; color: #feca40; padding: 30px; width: 300px; height: auto; background-color: rgba(0,0,0,0.3); display: none; position: absolute; top: 20%; left: 39%; text-align: center; z-index: 999; font-family: 'Asap', sans-serif; font-size: 110%; }
+#error-container { color: rgb(254,251,217); padding: 15px; width: 100%; height: auto; background-color: rgb(65,131,81); display: none; position: absolute; top: 50px; left: 0px; text-align: center; z-index: 999; font-family: 'Asap', sans-serif; font-size: 80%; }
+/*media queries*/
+@media screen and (max-width: 1000px) {
+	#nav-products a, #nav-aboutus a, #nav-support a, #nav-contactus a, #nav-console a { font-size: 90%; }
+}
+@media screen and (min-width: 1500px) and (max-width: 1699px) {
+	#header-content, #footer-content { width: 60%; }
+}
+@media screen and (min-width: 1700px) {
+	#header-content, #footer-content { width: 50%; }
+}
+/*animation prototype*/
 @-webkit-keyframes spin {
 	0% { -webkit-transform: rotate(0deg); }
 	100% { -webkit-transform: rotate(360deg); }

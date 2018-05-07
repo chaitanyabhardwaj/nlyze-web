@@ -1,8 +1,9 @@
 
 <!DOCTYPE html><html lang="en-US" dir="ltr"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" /><title>Account | NLYZE</title><meta name="description" content="" /><meta name="owner" content="Sunil Malhotra"><meta name="author" content="Chaitanya Bhardwaj" /><base href="main_account.html" target="_blank" /><meta name="referrer" content="origin-when-cross-origin" /><link rel="icon" type="image/x-icon" href="resources/favicon_title.png" /><meta name="robots" content="noindex, nofollow">
-<link rel="stylesheet" type="text/css" href="stylesheets/basicstyle.css"/>
-<link rel="stylesheet" type="text/css" media="screen and (max-width: 1000px)" href="stylesheets/main_account-small.css" />
-<link rel="stylesheet" type="text/css" media="screen and (min-width: 1001px)" href="stylesheets/main_account-large.css" />
+<link rel="stylesheet" type="text/css" media="screen and (max-width: 900px)" href="stylesheets/basicstyle-small.css" />
+<link rel="stylesheet" type="text/css" media="screen and (min-width: 901px)" href="stylesheets/basicstyle-large.css" />
+<link rel="stylesheet" type="text/css" media="screen and (max-width: 900px)" href="stylesheets/main_account-small.css" />
+<link rel="stylesheet" type="text/css" media="screen and (min-width: 901px)" href="stylesheets/main_account-large.css" />
 <script src="scripts/jquery-3.2.1.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/4.12.1/firebase.js"></script>
 <script src="https://www.gstatic.com/firebasejs/4.12.1/firebase-firestore.js"></script>
@@ -212,7 +213,6 @@
 		docRef.collection('products').doc('np001').get().then(function(doc) {
 			if(doc.exists) {
 				const data = doc.data();
-				console.log(data);
 				if(data.active) {
 					$('#active-status-img-2').fadeOut(200);
 				}
@@ -289,12 +289,15 @@
 							<div class="dropdown" id="nav-dropdown">
 								<div class="dropdown-attach"></div>
 								<ul class="dropdown-list">
-									<li><a href="/main_account.html" target="_self"><img src="/resources/settings_icon.png">Account</a></li>
-									<li id="nav-signin-icon"><a href="/signin.html" target="_self"><img src="/resources/profile_placeholder_invert.png">Sign In</a></li>
-									<li id="nav-signout-icon"><img src="/resources/profile_placeholder_invert.png">Sign Out <span id="nav-signout-name"><!--Username--></span></li>
+									<li><a href="/main_account.html" target="_self"><img src="/resources/settings_icon.png" class="small"><img src="/resources/settings_icon_invert.png" class="large">Account</a></li>
+									<li id="nav-signin-icon"><a href="/signin.html" target="_self"><img src="/resources/profile_placeholder.png" class="small"><img src="/resources/profile_placeholder_invert.png" class="large">Sign In</a></li>
+									<li id="nav-signout-icon"><img src="/resources/profile_placeholder.png" class="small"><img src="/resources/profile_placeholder_invert.png" class="large">Sign Out <span id="nav-signout-name"><!--Username--></span></li>
 								</ul>
 							</div>
 						</div>
+					</div>
+					<div id="nav-drawer" class="inner-container img-container">
+						<img src="/resources/drawer_icon.png" alt="DROPDOWN">
 					</div>
 					<div class="clearfix"></div>
 				</div>

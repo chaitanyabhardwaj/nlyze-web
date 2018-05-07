@@ -1,0 +1,27 @@
+
+#section-0-content { position: relative; padding: 0px; }
+#section-0-heading-container { position: absolute; top: 42%; left: 42%; font-family: 'Asap', sans-serif; color: #fff; background-color: rgba(0,0,0,0.7); padding: 7px; border-left: 5px solid #1daeeb; font-size: 50%; }
+#section-1 { margin-top: 20px; margin-bottom: 20px; }
+#section-1-content { padding: 10px 30px; }
+#section-1-heading-container { text-align: center; margin-bottom: 50px; }
+#section-1-heading-container p { font-size: 140%; font-weight: lighter; color: rgb(216,216,216); }
+.flex-container { display: -webkit-box; display: -moz-box; display: -webkit-flex; display: -ms-flexbox; display: flex; -webkit-flex-direction: row; flex-direction: row; -webkit-flex-wrap: wrap; flex-wrap: wrap; -webkit-justify-content: flex-start; justify-content: flex-start; }
+.card { width: 100%; height: 400px; position: relative; margin-right: 10px; }
+.card-heading h4 { font-family: 'Asap', sans-serif; font-size: 90%; }
+.card-img { width: 50px; height: 50px; margin-bottom: 10px; }
+.card-action { padding: 10px; margin-top: 10px; position: absolute; bottom: 5%; right: 7%; -webkit-transition: background-color 0.2s; -moz-transition: background-color 0.2s; -ms-transition: background-color 0.2s; -o-transition: background-color 0.2s; transition: background-color 0.2s; }
+.card-action:hover { background-color: rgb(243,243,243); }
+.card-action a { color: #1daeeb; font-size: 90%; }
+/*media rule*/
+@media screen and (min-width: 550px) and (max-width: 799px) {
+	.flex-container { width: 70%; margin: auto; }
+	#section-0-heading-container { top: 45%; left: 45%; font-size: 60%; }
+}
+@media screen and (min-width: 800px) {
+	.card { width: 48%; }
+	#section-0-heading-container { font-size: 100%; }
+}
+
+
+
+

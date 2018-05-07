@@ -13,9 +13,12 @@
  	Every section of the page contains 'title' and/or 'content', enclosed within that section's container
  -->
 <!DOCTYPE html><html lang="en-US" dir="ltr"><head><meta charset="utf-8"><title>Smartdroid Collector</title><meta name="description" content=""><meta name="owner" content=""><meta name="author" content="Chaitanya Bhardwaj"><base href="buttonmapping.html" target="_self"><meta name="referrer" content="origin-when-cross-origin"><link rel="icon" type="image/x-icon" href="/resources/favicon_title.png">
-<link rel="stylesheet" type="text/css" href="stylesheets/basicstyle.css">
-<link rel="stylesheet" type="text/css" href="stylesheets/buttonmapping-large.css">
-<link rel="stylesheet" type="text/css" href="stylesheets/index-large.css">
+<link rel="stylesheet" type="text/css" media="screen and (max-width: 900px)" href="stylesheets/basicstyle-small.css" />
+<link rel="stylesheet" type="text/css" media="screen and (min-width: 901px)" href="stylesheets/basicstyle-large.css" />
+<link rel="stylesheet" type="text/css" media="screen and (max-width: 900px)" href="stylesheets/index-small.css" />
+<link rel="stylesheet" type="text/css" media="screen and (min-width: 901px)" href="stylesheets/index-large.css" />
+<link rel="stylesheet" type="text/css" media="screen and (max-width: 900px)" href="stylesheets/buttonmapping-small.css" />
+<link rel="stylesheet" type="text/css" media="screen and (min-width: 901px)" href="stylesheets/buttonmapping-large.css" />
 <meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <script src="/scripts/jquery-3.2.1.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/4.12.0/firebase.js"></script>
@@ -33,6 +36,11 @@
 		this.userRef = user;
 		this.db = firebase.firestore();
 		this.buttonMappingRef = this.db.collection('users/' + user.uid + '/products/np001/button_mapping');
+		//dom element shortcut
+		this.outerWrapper = $('#outer-wrapper');
+		this.floatingHeading = $('#floating-heading');
+		this.floatingContent = $('#floating-content-container');
+		this.floatingContainer = $('#floating-container');
 		//Instantiate the layout
 		this.initLayout();
 		//Add event listeners
@@ -44,6 +52,13 @@
 		});
 		$('#select-button-name').change(function() {
 			inst.updateEditValues();
+		});
+		$('#main-table').on('click', '.info-icon', function() {
+			inst.showButtonInfo($(this));
+		});
+		$('#floating-close-container').click(function() {
+			inst.outerWrapper.hide();
+			inst.floatingContainer.hide();
 		});
 	};
 
@@ -64,9 +79,11 @@
 				$("<tr class='data-row'>").appendTo("table.startAppend")
 					.append($("<td class='td-name'>").text(data.name))
 					.append($("<td class='td-long-id'>").text(data.longId))
-					.append($("<td class='td-line-name'>").text(data.lineName))
-					.append($("<td class='td-reason-name'>").text(data.reasonName))
-					.append($("<td class='td-family-name'>").text(data.familyName));
+					.append($("<td class='td-line-name large'>").text(data.lineName))
+					.append($("<td class='td-reason-name large'>").text(data.reasonName))
+					.append($("<td class='td-family-name large'>").text(data.familyName))
+					.append($("<td class='td-bttn-small-info small'>")
+						.html("<img src='/resources/info_icon.png' alt='INFO' class='info-icon' data-td-name='" + data.name + "' data-td-line-name='" + data.lineName + "' data-td-reason-name='" + data.reasonName + "' data-td-family-name='" + data.familyName + "'>"));
 				$("<option class='data-option'>").appendTo("select#select-button-name").text(data.name);
 			});
 		});
@@ -221,8 +238,20 @@
 		});
 	};
 
+	ButtonMapping.prototype.showButtonInfo = function(element) {
+		//get bttn component details
+		const bttnName = element.attr('data-td-name');
+		const bttnLineName = element.attr('data-td-line-name');
+		const bttnReasonName = element.attr('data-td-reason-name');
+		const bttnFamilyName = element.attr('data-td-family-name');
+		//show data in floating container
+		this.floatingHeading.text(bttnName);
+		this.floatingContent.html("Line Name - " + bttnLineName + "<br><br>" + "Reason Name - " + bttnReasonName + "<br><br>" + "Family Name - " + bttnFamilyName);
+		this.floatingContainer.show();
+		this.outerWrapper.show();
+	};
+
 	ButtonMapping.prototype.update = function(componentObj) {
-		console.log('run1');
 		const inst = this;
 		this.buttonMappingRef.doc(componentObj.id).update(componentObj).then(function() {
 			//mapping updated
@@ -235,7 +264,6 @@
 	};
 
 	ButtonMapping.prototype.deleteAndAdd = function(componentObj) {
-		console.log('run2');
 		const inst = this;
 		//get old bttn data
 		this.buttonMappingRef.doc(componentObj.id).get().then(function(doc) {
@@ -342,6 +370,9 @@
 	};
 
 	$(document).ready(function() {
+		//main drawer
+		const mainDrawer = new MainDrawer('main-drawer');
+		mainDrawer.closeIfClickedElsewhere();
 		//Get user
 		firebase.auth().onAuthStateChanged(function(user) {
 			if(user) {
@@ -368,7 +399,21 @@
 </script>
 </head><body>
 	<div id="outer-container" class="container">
+		<div id="outer-wrapper"></div>
 		<div id="error-container"></div>
+		<div id="floating-container" class="small">
+			<div id="floating-heading-container" class="container">
+				<h3 id="floating-heading" class="inner-container">
+					<!-- HEADING GOES HERE -->
+				</h3>
+				<div id="floating-close-container" class="inner-container">
+					<img src="/resources/white_cross.png" alt="CLOSE" id="floating-close">
+				</div>
+			</div>
+			<div id="floating-content-container" class="container">
+				<!-- FLOATING CONTENT GOES HERE -->
+			</div>
+		</div>
 		<div id="header-container" class="container">
 			<header class="container">
 				<div id="header-content" class="container center">
@@ -378,21 +423,42 @@
 						</div>
 					</a>
 					<div id="nav-container" class="inner-container">
+						<div id="nav-container-products" class="inner-container nav-content">
+							<div id="nav-products"><a href="/products.html" target="_self">Products</a></div>
+							<!-- OPTIONAL DROPDOWN -->
+						</div>
+						<div id="nav-container-aboutus" class="inner-container nav-content">
+							<div id="nav-aboutus"><a href="/aboutus.html" target="_self">About Us</a></div>
+							<!-- OPTIONAL DROPDOWN -->
+						</div>
+						<div id="nav-container-support" class="inner-container nav-content">
+							<div id="nav-support"><a href="/support.html" target="_self">Support</a></div>
+							<!-- OPTIONAL DROPDOWN -->
+						</div>
+						<div id="nav-container-contactus" class="inner-container nav-content">
+							<div id="nav-contactus"><a href="/contactus.html" target="_self">Contact Us</a></div>
+							<!-- OPTIONAL DROPDOWN -->
+						</div>
+						<div id="nav-container-console" class="inner-container nav-content">
+							<div id="nav-console"><a href="/console.html">GO TO CONSOLE</a></div>
+							<!-- OPTIONAL DROPDOWN -->
+						</div>
 						<div id="nav-container-signin" class="inner-container">
 							<div id="nav-signin" class="container img-container nav-content">
-								<span id="user-display-name"><!-- Script --></span>
 								<img src="/resources/profile_placeholder.png" alt="User" class="profile-placeholder">
 							</div>
 							<div class="dropdown" id="nav-dropdown">
 								<div class="dropdown-attach"></div>
 								<ul class="dropdown-list">
-									<li><a href="/main_account.html"><img src="/resources/settings_icon.png">Account</a></li>
-									<li id="nav-signin-icon"><a href="/signin.html" target="_self"><img src="/resources/profile_placeholder_invert.png">Sign In</a></li>
-									<li id="nav-signout-icon"><img src="/resources/profile_placeholder_invert.png">Sign Out <span id="nav-signout-name"><!--Username--></span></li>
-									<!-- CHANGE SIGN IN TO 'SIGNOUT USERNAME', IF USER SIGNED IN -->
+									<li><a href="/main_account.html" target="_self"><img src="/resources/settings_icon.png" class="small"><img src="/resources/settings_icon_invert.png" class="large">Account</a></li>
+									<li id="nav-signin-icon"><a href="/signin.html" target="_self"><img src="/resources/profile_placeholder.png" class="small"><img src="/resources/profile_placeholder_invert.png" class="large">Sign In</a></li>
+									<li id="nav-signout-icon"><img src="/resources/profile_placeholder.png" class="small"><img src="/resources/profile_placeholder_invert.png" class="large">Sign Out <span id="nav-signout-name"><!--Username--></span></li>
 								</ul>
 							</div>
 						</div>
+					</div>
+					<div id="nav-drawer" class="inner-container img-container">
+						<img src="/resources/drawer_icon.png" alt="DROPDOWN">
 					</div>
 					<div class="clearfix"></div>
 				</div>
@@ -402,6 +468,10 @@
 			<main class="container">
 				<div id="main-content" class="container">
 					<section id="section-0" class="inner-container">
+						<div id="main-drawer" class="container img-container">
+							<img src="/resources/drawer_1_icon.png" alt="DROPDOWN" class="small">
+						</div>
+						<div class="clearfix"></div>
 						<div id="section-0-content" class="container section-content">
 							<div id="section-0-heading-container" class="container">
 								<h1 class="container">Prodcuts</h1>
@@ -442,9 +512,10 @@
 									<table id="main-table" class="startAppend">
 										<tr><th id="button-name-col">Button Name</th>
 										<th id="button-long-id-col">Button ID</th>
-										<th id="line-name-col">Line Name</th>
-										<th id="reason-name-col">Reason Name</th>
-										<th id="family-name-col">Family Name</th></tr>
+										<th id="line-name-col" class="large">Line Name</th>
+										<th id="reason-name-col" class="large">Reason Name</th>
+										<th id="family-name-col" class="large">Family Name</th>
+										<th class="small"></th></tr>
 										<!-- SAMPLE ROW SYNTAX
 
 										<tr class="data-row">
