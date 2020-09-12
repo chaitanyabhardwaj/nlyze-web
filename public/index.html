@@ -1,168 +1,294 @@
 
-<!DOCTYPE html><html lang="en-US" dir="ltr"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" /><title>NLYZE</title><meta name="description" content="" /><meta name="owner" content="Sunil Malhotra"><meta name="author" content="Chaitanya Bhardwaj" /><base href="index.html" target="_blank" /><meta name="referrer" content="origin-when-cross-origin" /><link rel="icon" type="image/x-icon" href="resources/favicon_title.png" /><meta name="robots" content="index, follow">
-<link rel="stylesheet" type="text/css" media="screen and (max-width: 900px)" href="stylesheets/basicstyle-small.css" />
-<link rel="stylesheet" type="text/css" media="screen and (min-width: 901px)" href="stylesheets/basicstyle-large.css" />
-<link rel="stylesheet" type="text/css" media="screen and (max-width: 900px)" href="stylesheets/index-small.css" />
-<link rel="stylesheet" type="text/css" media="screen and (min-width: 901px)" href="stylesheets/index-large.css" />
+<!DOCTYPE html><html lang="en-US" dir="ltr"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" /><title>NLYZE | Factory Model</title><meta name="description" content="" /><meta name="owner" content="Nakul Malhotra"><meta name="author" content="Chaitanya Bhardwaj" /><base href="preferences.html" target="_self" /><meta name="referrer" content="origin-when-cross-origin" /><link rel="icon" type="image/x-icon" href="resources/favicon_title.png" /><meta name="robots" content="index, nofollow">
+<link rel="stylesheet" type="text/css" href="lib/bootstrap-4/css/bootstrap.min.css">
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" type="text/css" href="stylesheets/index-large.css">
 <script src="scripts/jquery-3.2.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+<script src="lib/bootstrap-4/js/bootstrap.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/4.12.0/firebase.js"></script>
 <script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-firestore.js"></script>
 <script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-functions.js"></script>
 <script src="scripts/main.js"></script>
-<script src="/scripts/productchecker.js"></script>
-<script src="/scripts/inspector.js"></script>
+<script src="scripts/inspector.js"></script>
 <script>
 
 	'use strict';
 
 	//Initialize AuthUser
 	function AuthUser(user) {
-		displayError('Hello! ' + user.displayName);
+		//Auth func
 	};
 	
-	//FUCNTION TO DISPLAY TEXT FLOATING AT THE TOP
-	function displayError(msg) {
+	//FUCNTION TO DISPLAY TEXT DIALOG AT THE TOP
+	function displayDialog(msg, dialogType) {
 		$('html, body').scrollTop(0);
-		$('#error-container').html(msg);
-		$('#error-container').fadeIn();
+		var dialogBox = $('.alert-' + dialogType);
+		if(dialogBox.length === 0) //dialogBox with class 'dialogType' does not exsists
+			dialogBox =$('.alert-warning');
+		dialogBox.html(msg);
+		dialogBox.fadeIn();
 		var timer = setInterval(function() {
-			$('#error-container').fadeOut();
+			dialogBox.fadeOut();
 			clearInterval(timer);
 		}, 4000);
 	};
 
 	$(document).ready(function() {
+		const dashboardBtn = $('.dashboard-btn');
 		firebase.auth().onAuthStateChanged(function(user) {
 			if(user) {
 				//User is signed in
 				const inspector = new Inspector(user);
 				inspector.checkDisabled();
 				const authUser = new AuthUser(user);
+				dashboardBtn.attr('href','/products.html');
 			}
 		});
 	});
 
 </script>
 </head><body>
-	<div id="outer-container" class="container">
-		<div id="error-container"></div>
-		<div id="header-container" class="container">
-			<header class="container">
-				<div id="header-content" class="container center">
-					<a href="index.html" target="_self">
-						<div class="favicon-container inner-container img-container">
-							<img src="resources/favicon.png" alt="Nlyse" class="favicon-img">
+	<div class="outer-wrapper container-fluid"></div>
+	<div class="outer-container">
+		<div class="alert alert-success dialog-box text-center"></div>
+		<div class="alert alert-warning dialog-box text-center"></div>
+		<div class="alert alert-danger dialog-box text-center"></div>
+		<div class="header-container container-fluid">
+			<header class="row px-100 border-0">
+				<div class="header-title col-md-2 m-auto h4 text-heading text-right">
+					<img src="resources/favicon_title.png" class="favicon-title-icon d-inline-block">Nlyze
+				</div>
+				<div class="container nav-container col-md-10">
+					<nav class="row">
+						<div class="col-10">
+							<ul class="nav">
+								<li class="nav-item top-nav-item header-item">
+									<a href="#" class="nav-link text-low text-medium">Features</a>
+								</li>
+								<li class="nav-item top-nav-item header-item">
+									<a href="#" class="nav-link text-low text-medium">Use Cases</a>
+								</li>
+								<li class="nav-item top-nav-item header-item">
+									<a href="#" class="nav-link text-low text-medium">Pricing</a>
+								</li>
+								<li class="nav-item top-nav-item header-item">
+									<a href="#" class="nav-link text-low text-medium">Help</a>
+								</li>
+							</ul>
 						</div>
-					</a>
-					<div id="nav-container" class="inner-container">
-						<div id="nav-container-products" class="inner-container nav-content">
-							<div id="nav-products"><a href="products.html" target="_self">Products</a></div>
-							<!-- OPTIONAL DROPDOWN -->
+						<div class="header-item col-2 text-right">
+							<a href="/signin.html" class="btn btn-primary px-3 py-1 text-medium font-weight-light mt-2 dashboard-btn">Dashboard</a>
 						</div>
-						<div id="nav-container-aboutus" class="inner-container nav-content">
-							<div id="nav-aboutus"><a href="aboutus.html" target="_self">About Us</a></div>
-							<!-- OPTIONAL DROPDOWN -->
-						</div>
-						<div id="nav-container-support" class="inner-container nav-content">
-							<div id="nav-support"><a href="support.html" target="_self">Support</a></div>
-							<!-- OPTIONAL DROPDOWN -->
-						</div>
-						<div id="nav-container-contactus" class="inner-container nav-content">
-							<div id="nav-contactus"><a href="contactus.html" target="_self">Contact Us</a></div>
-							<!-- OPTIONAL DROPDOWN -->
-						</div>
-						<div id="nav-container-console" class="inner-container nav-content">
-							<div id="nav-console"><a href="console.html">GO TO CONSOLE</a></div>
-							<!-- OPTIONAL DROPDOWN -->
-						</div>
-						<div id="nav-container-signin" class="inner-container">
-							<div id="nav-signin" class="container img-container nav-content">
-								<img src="resources/profile_placeholder.png" alt="User" class="profile-placeholder">
-							</div>
-							<div class="dropdown" id="nav-dropdown">
-								<div class="dropdown-attach"></div>
-								<ul class="dropdown-list">
-									<li><a href="/main_account.html" target="_self"><img src="/resources/settings_icon.png" class="small"><img src="/resources/settings_icon_invert.png" class="large">Account</a></li>
-									<li id="nav-signin-icon"><a href="/signin.html" target="_self"><img src="/resources/profile_placeholder.png" class="small"><img src="/resources/profile_placeholder_invert.png" class="large">Sign In</a></li>
-									<li id="nav-signout-icon"><img src="/resources/profile_placeholder.png" class="small"><img src="/resources/profile_placeholder_invert.png" class="large">Sign Out <span id="nav-signout-name"><!--Username--></span></li>
-								</ul>
-							</div>
-						</div>
-					</div>
-					<div id="nav-drawer" class="inner-container img-container">
-						<img src="/resources/drawer_icon.png" alt="DROPDOWN">
-					</div>
-					<div class="clearfix"></div>
+					</nav>
 				</div>
 			</header>
 		</div>
-		<div id="main-container" class="container">
-			<main class="container">
-				<div id="main-content" class="container">
-					<section id="section-0" class="container">
-						<div id="section-0-content" class="container section-content center">
-							<div id="section-0-heading-container" class="container">
-								<!-- Write heading here -->
+		<div class="main-container mt-5 container-fluid px-0">
+			<main class="container-fluid px-0">
+				<div class="container section px-100" id="section-1">
+					<div class="row">
+						<div class="col-6 my-100">
+							<div class="container h4 font-weight-normal">
+								Discover efficiency.
 							</div>
-							<div class="container img-container">
-								<img src="resources/section_0.png" alt="Image1" id="section-0-img">
+							<div class="container text-low text-medium">
+								Finally, a loss management tool that works <br>without all the hassles.
 							</div>
-							<div id="section-0-text-container" class="container">
-								<!-- Write Text Here -->
+							<div class="container">
+								<button type="button" class="btn btn-primary px-3 py-1 mt-2 w-50 text-medium font-weight-light">Get Started</button>
 							</div>
 						</div>
-					</section>
-					<div class="container" id="temp-t-" style="text-align: center; margin-top: 100px; margin-bottom: 10px; font-size: 150%;">UNDER DEVELOPMENT</div>
-					<div class="container center img-container" id="temp-ud-img">
-						<img src="resources/favicon_title.png" alt="NLYZE">
+						<div class="col-6">
+							<img src="resources/sec_1.png" class="w-100">
+						</div>
 					</div>
-					<!-- <section id="section-1" class="container">
-						<div id="section-1-content" class="container section-content center">
-							<div id="section-1-heading-container" class="container">
-								<h1 class="section-heading">Smartdroid Collector</h1>
-							</div>
-							<div class="container img-container">
-								<img src="resources/section_1.jpg" alt="Image2" id="section-1-img">
-							</div>
-							<div id="section-1-text-container" class="container">
-								<!- Write Text Here ->
+				</div>
+				<div class="container-fluid section w-100 px-5 py-2" id="section-2">
+					<div class="container text-heading text-center mt-50">
+						Nlyze has solutions for everyone!
+					</div>
+					<div class="container text-center mb-3">
+						<img src="/resources/custom_text_shadow_1.png" width="10%">
+					</div>
+					<div class="row w-50 m-auto">
+						<div class="col-3">
+							<button type="button" class="btn border w-100 text-medium text-low font-weight-light">Startups</button>
+						</div>
+						<div class="col-3">
+							<button type="button" class="btn border w-100 text-medium text-low font-weight-light">Mid-Size Plants</button>
+						</div>
+						<div class="col-3">
+							<button type="button" class="btn border w-100 text-medium text-low font-weight-light">Large Plants</button>
+						</div>
+						<div class="col-3">
+							<button type="button" class="btn border w-100 text-medium text-low font-weight-light">Corporations</button>
+						</div>
+					</div>
+					<div class="container text-low text-medium text-center font-weight-light my-4">
+						Increase your OE by managing your losses from a birds eye view. No more excel!
+					</div>
+				</div>
+				<div class="container-fluid section w-100 px-5 py-2 bg-light" id="section-3">
+					<div class="container text-heading text-center my-5">
+						We've got everything for you.
+					</div>
+					<div class="container my-2">
+						<img src="/resources/sec_3_1.png" class="w-75 m-auto d-block">
+					</div>
+					<div class="container my-5">
+						<ul class="nav justify-content-center">
+							<li class="nav-item mx-5 active-item">
+								<img src="/resources/sec_3_2.png" class="w-75 m-auto d-block" alt="Tasks">
+							</li>
+							<li class="nav-item mx-5">
+								<img src="/resources/sec_3_3.png" class="w-75 m-auto d-block" alt="Collaborate">
+							</li>
+							<li class="nav-item mx-5">
+								<img src="/resources/sec_3_4.png" class="w-75 m-auto d-block" alt="Discuss">
+							</li>
+							<li class="nav-item mx-5">
+								<img src="/resources/sec_3_5.png" class="w-75 m-auto d-block" alt="TimeKeep">
+							</li>
+							<li class="nav-item mx-5">
+								<img src="/resources/sec_3_6.png" class="w-75 m-auto d-block" alt="Analyze">
+							</li>
+						</ul>
+					</div>
+					<div class="container text-medium font-weight-light text-center mt-5">
+						It's much more than your KPIs
+					</div>
+					<div class="container text-small font-weight-light text-low text-center">
+						One place to find all the data that matter to you. Yours, and your plant’s
+					</div>
+					<div class="container text-small font-weight-light text-low text-center">
+						Quickly check your daily or weekly losses or search, sort and filter by line or by loss reasons.
+					</div>
+				</div>
+				<div class="container-fluid section w-100 py-5 px-0" id="section-4">
+						<div class="my-5">
+							<div class="pricing-bar-base">
+								<img src="/resources/sec_4_2.png" class="w-90">
+								<div class="pricing-bar">
+									<img src="/resources/sec_4_1.png" class="w-89">	
+								</div>
+								<div class="pricing-bar-content w-65">
+									<div class="container text-center text-light font-weight-light">
+										We're the most affordable out there!
+									</div>
+									<div class="container text-center mb-3">
+										<img src="/resources/custom_text_shadow.png" width="10%">
+									</div>
+									<div class="row w-100 mt-5">
+										<div class="col-4">
+											<div class="card w-100">
+												<div class="card-body">
+													<div class="h2 font-weight-light text-center pricing-color">Free</div>
+													<div class="text-low font-weight-light text-center text-medium">1 Plant</div>
+													<div class="text-low font-weight-light text-center text-medium">1 month trial period</div>
+												</div>
+											</div>
+										</div>
+										<div class="col-4">
+											<div class="card w-100">
+												<div class="card-body">
+													<div class="h2 font-weight-light text-center pricing-color">$4000</div>
+													<div class="text-low font-weight-light text-center text-medium">1 module</div>
+													<div class="text-low font-weight-light text-center text-medium">Unlimited team memebers</div>
+												</div>
+											</div>
+										</div>
+										<div class="col-4">
+											<div class="card w-100">
+												<div class="card-body">
+													<div class="h2 font-weight-light text-center pricing-color">$10,000</div>
+													<div class="text-low font-weight-light text-center text-medium">1 Plant</div>
+													<div class="text-low font-weight-light text-center text-medium">1 month trial period</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
 							</div>
 						</div>
-					</section> -->
+						<div class="container font-weight-light text-center mt-5">
+							Get your free trial now
+						</div>
+						<div class="container text-center mb-1">
+							<img src="/resources/custom_text_shadow_1.png" width="10%">
+						</div>
+						<div class="container text-center">
+							<button type="button" class="btn btn-primary px-5 my-3 font-weight-light text-medium">Email</button>
+						</div>
 				</div>
 			</main>
 		</div>
-		<div id="footer-container" class="container">
-			<footer class="container">
-				<div id="footer-content" class="container center">
-					<div id="aboutus-summary" class="inner-container">
-						<h4>About Us</h4>
-						<!-- Write About Us Summary Here -->
+		<div class="container-fluid footer-container pt-5 px-0 mx-0">
+			<footer class="p-5 mx-0 w-100">
+				<div class="row p-5">
+					<div class="col-3">
+						<div class="text-medium text-low text-center font-weight-light">
+							PRODUCT
+						</div>
+						<ul class="nav flex-column">
+							<li class="nav-item top-nav-item">
+								<a href="#" class="nav-link text-muted text-center text-small">Features</a>
+							</li>
+							<li class="nav-item top-nav-item">
+								<a href="#" class="nav-link text-muted text-center text-small">Use Cases</a>
+							</li>
+							<li class="nav-item top-nav-item">
+								<a href="#" class="nav-link text-muted text-center text-small">Pricing</a>
+							</li>
+						</ul>
 					</div>
-					<div class="contactus-summary inner-container">
-						<h4>Contact Us</h4>
-						<div class="container contact-container">
-							<div class="inner-container img-container contact-icon">
-								<img src="resources/phone_icon.png" alt="Phone : ">
-							</div>
-							519-757-2531
+					<div class="col-3">
+						<div class="text-medium text-low text-center font-weight-light">
+							USE CASES
 						</div>
-						<div class="container contact-container">
-							<div class="inner-container img-container contact-icon">
-								<img src="resources/mail_icon.png" alt="Email : ">
-							</div>
-							sunil@nlze.com
-						</div>
-						<div class="container contact-container">
-							<div class="inner-container img-container contact-icon">
-								<img src="resources/home_icon.png" alt="Address : ">
-							</div>
-							43, Coxwell Cres<br>Brantford, ON, N3P1P5<br>Canada.
-						</div>
+						<ul class="nav flex-column">
+							<li class="nav-item top-nav-item">
+								<a href="#" class="nav-link text-muted text-center text-small">ITES</a>
+							</li>
+							<li class="nav-item top-nav-item">
+								<a href="#" class="nav-link text-muted text-center text-small">Consultancies</a>
+							</li>
+							<li class="nav-item top-nav-item">
+								<a href="#" class="nav-link text-muted text-center text-small">Services Sector</a>
+							</li>
+						</ul>
 					</div>
-					<div class="clearfix"></div>
-					<div id="copyright" class="container">
-						<!-- Copyright display -->
+					<div class="col-3">
+						<div class="text-medium text-low text-center font-weight-light">
+							SUPPORT
+						</div>
+						<ul class="nav flex-column">
+							<li class="nav-item top-nav-item">
+								<a href="#" class="nav-link text-muted text-center text-small">Blog</a>
+							</li>
+							<li class="nav-item top-nav-item">
+								<a href="#" class="nav-link text-muted text-center text-small">FAQ's</a>
+							</li>
+							<li class="nav-item top-nav-item">
+								<a href="#" class="nav-link text-muted text-center text-small">Support</a>
+							</li>
+						</ul>
+					</div>
+					<div class="col-3">
+						<div class="text-medium text-low text-center font-weight-light">
+							COMPANY
+						</div>
+						<ul class="nav flex-column">
+							<li class="nav-item top-nav-item">
+								<a href="#" class="nav-link text-muted text-center text-small">About</a>
+							</li>
+							<li class="nav-item top-nav-item">
+								<a href="#" class="nav-link text-muted text-center text-small">Privacy Policy</a>
+							</li>
+							<li class="nav-item top-nav-item">
+								<a href="#" class="nav-link text-muted text-center text-small">Terms of service</a>
+							</li>
+						</ul>
 					</div>
 				</div>
 			</footer>

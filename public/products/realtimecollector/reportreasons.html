@@ -24,7 +24,7 @@
 <script src="https://www.gstatic.com/firebasejs/4.12.0/firebase.js"></script>
 <script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-firestore.js"></script>
 <script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-functions.js"></script>
-<script src="/scripts/main.js"></script>
+<script src="scripts/main.js"></script>
 <script src="scripts/Chart.bundle.min.js"></script>
 <script src="/scripts/jquery-ui-1.12.1.custom/jquery-ui.min.js"></script>
 <script src="/scripts/productchecker.js"></script>
@@ -39,6 +39,9 @@
 		//check user account type and modify userId is account is 'user-type'
 		this.checkUserAccountType();
 		this.logsRef = this.db.collection('users/' + this.userId + '/products/np001/logs');
+		this.productRef = this.db.collection('users').doc(user.uid).collection('products').doc('np001');
+		//Calling initializing functions
+		this.authUser();
 		//Instantiate the layout
 		this.initLayout();
 		//Preload the logs
@@ -99,6 +102,24 @@
 		});
 		$('#print-button-container').click(function() {
 			inst.printHardChart();
+		});
+	};
+
+	ReportByReasons.prototype.authUser = function() {
+		this.productRef.get().then(function(p) {
+			if(p.exists) {
+				if(p.data().active) {
+					//Authorized product
+				}
+				else {
+					//Product not authorized
+					window.location.replace('/');
+				}
+			}
+			else 
+				window.location.replace('/');
+		}).catch(function(error) {
+			console.log(error);
 		});
 	};
 

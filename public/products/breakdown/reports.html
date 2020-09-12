@@ -1,0 +1,128 @@
+<!DOCTYPE html/>
+<html>
+
+
+<link rel="stylesheet" href="../bower_components/bootstrap/dist/css/bootstrap.min.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" type="text/css" href="css/index-large.css">
+<script src="js/jquery-3.2.1.min.js"></script>
+<script src="../node_modules/chart.js"></script>
+<script src="js/Chart.bundle.min.js"></script>
+
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+<script href="../bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+
+
+
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-functions.js"></script>
+
+
+<script>
+  var config = {
+    apiKey: "AIzaSyCXWIr6ctkGUGYRvXsYgFG-NnCk6VRW_7Q",
+    authDomain: "nlyze-1.firebaseapp.com",
+    databaseURL: "https://nlyze-1.firebaseio.com",
+    projectId: "nlyze-1",
+    storageBucket: "nlyze-1.appspot.com",
+    messagingSenderId: "285435874741"
+  };
+  firebase.initializeApp(config);
+</script>
+</head>
+
+<body onload="getData();">
+	<div class="outer-wrapper container-fluid"></div>
+	<div class="outer-container">
+		<div class="header-container container-fluid">
+      <header class="container-fluid row">
+				<div class="container nav-container col-11">
+					<nav class="container row">
+						<div class="container col-11">
+							<ul class="nav">
+								<li class="nav-item top-nav-item header-item">
+									<a href="log.html" class="nav-link text-muted"><small>Data Log</small></a>
+								</li>
+								<li class="nav-item top-nav-item top-nav-item-active header-item">
+									<a href="test2.html" class="nav-link active"><small>Analytics</small></a>
+								</li>
+                <li class="nav-item top-nav-item header-item">
+									<a href="workforce.html" class="nav-link text-muted"><small>Workforce</small></a>
+								</li>
+                <li class="nav-item top-nav-item header-item">
+									<a href="recorder.html" class="nav-link text-muted"><small>Breakdown</small></a>
+								</li>
+                <li class="nav-item top-nav-item header-item">
+									<a href="shiftTimes.html" class="nav-link text-muted"><small>Shift Times</small></a>
+								</li>
+              
+							</ul>
+						</div>
+						<div class="container header-item col-1">
+							<a href="#" class="btn btn-primary px-3 py-1 text-small mt-2">Home</a>
+						</div>
+					</nav>
+				</div>
+			</header>
+		</div>
+
+		<div class="main-container pt-1 pr-5 pb-3">
+			<main>
+				<div class="container">
+					<div class="card pb-5">
+						<div class="card-body pb-5">
+
+
+							<div class="d-inline-block h5 text-dark float-left">
+								<strong> MTTR, MDT, MTBF By <span class="pareto-option pareto-option-1" style="border-bottom: 3px solid #50e3c2;">Month</span> in <span class="pareto-option pareto-option-2" style="border-bottom: 3px solid #50e3c2;">All Years</span>
+								</strong>
+							</div>
+
+
+              <div  class="d-inline-block mx-2 float-right">
+              <select class="family-select select-type-input p-1 px-2 rounded text-small font-weight-bold d-inline" id = "year-menu">
+                    <option value="AllYear" selected>AllYear</option>
+                    <option value="2017">2017</option>
+                    <option value="2018">2018</option>
+              </select>
+
+              <select class="family-select select-type-input p-1 px-2 rounded text-small font-weight-bold d-inline" id = "line-menu">
+                    <option value="AllLines" selected>AllLines</option>
+                    <option value="Line 5">Line 5</option>
+              </select>
+
+              <label> Monthly </label>
+              <input type="checkbox" id="Monthly">
+
+              <label> Weekly </label>
+              <input type="checkbox" id="Weekly">
+            </div>
+                  <canvas id="myChart"></canvas>
+						</div>
+
+
+					</div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="checkbox" id="MTTR" value="option1" checked>
+            <label class="form-check-label" for="inlineCheckbox1">MTTR</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="checkbox" id="MDT" value="option2" checked>
+            <label class="form-check-label" for="inlineCheckbox2">MDT</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="checkbox" id="MTBF" value="option3" checked>
+            <label class="form-check-label" for="inlineCheckbox3">MTBF</label>
+          </div>
+				</div>
+			</main>
+		</div>
+
+	</div>
+</body>
+<script src="./js/data.js"></script>
+
+</html>

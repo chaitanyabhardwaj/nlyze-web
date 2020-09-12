@@ -1,0 +1,6 @@
+.area-description-table th, .area-layout-table th { border: none; }
+.reference-period-select { min-width: 150px; }
+.area-select { min-width: 60px; }
+.reference-period-select, .area-select { background: url(dropdownicon_white.png) 95% / 15px no-repeat #fff; border: none; }
+.main-container { background-color: #eceff4 }
+.area-description-input, .area-layout-input { display: none; }

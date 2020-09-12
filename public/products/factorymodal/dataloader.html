@@ -1,0 +1,589 @@
+
+<!--
+	TODO : add animations on width change
+	TODO : Add Modal
+	TODO : Add deletion of updatedFileObj And warning modal
+	TODO : CSV importor tooltip
+-->
+
+
+<!DOCTYPE html><html lang="en-US" dir="ltr"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" /><title>NLYZE | Factory Model</title><meta name="description" content="" /><meta name="owner" content="Nakul Malhotra"><meta name="author" content="Chaitanya Bhardwaj" /><base href="dataloader.html" target="_self" /><meta name="referrer" content="origin-when-cross-origin" /><link rel="icon" type="image/x-icon" href="/resources/favicon_title.png" /><meta name="robots" content="index, nofollow">
+<link rel="stylesheet" type="text/css" href="lib/bootstrap-4/css/bootstrap.min.css">
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" type="text/css" href="stylesheets/index-large.css">
+<link rel="stylesheet" type="text/css" href="scripts/jquery-ui-1.12.1.custom/jquery-ui.min.css">
+<script src="scripts/jquery-3.2.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+<script src="lib/bootstrap-4/js/bootstrap.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-functions.js"></script>
+<script src="/scripts/main.js"></script>
+<script src="scripts/jquery-ui-1.12.1.custom/jquery-ui.min.js"></script>
+<script src="scripts/productchecker.js"></script>
+<script src="scripts/inspector.js"></script>
+<script src="scripts/dist/xlsx.full.min.js"></script>
+<script src="scripts/FileUploader.js"></script>
+<script>
+	
+	'use strict';
+
+	//Initializing DataLoader
+	function DataLoader(user) {
+		const inst = this;
+		this.userRef = user;
+		this.db = firebase.firestore();
+		//Instantiate datepicker
+		$('#start-date, #end-date').datepicker({
+   			changeMonth : true,
+    		changeYear : true,
+    		showButtonPanel : true,
+    		dateFormat : 'mm-yy',
+    		firstDay : 1,
+    		onClose: function(dateText, inst) { 
+                $(this).datepicker('setDate', new Date(inst.selectedYear, inst.selectedMonth, 1));
+            }
+    	});
+		//shortcuts to html dom
+		this.fileMetaData = $('.file-meta-data');
+		this.fileMetaType = $('.file-meta-type');
+		this.fileUploadedBy = $('.file-uploaded-by');
+		this.fileMetaSize = $('.file-meta-size');
+		this.dateNow = $('.date-now');
+		this.dropzoneContainer = $('.dropzone-container');
+		this.factoryFileType = $('#factory-file-type');
+		this.factoryFileTableType = $('#factory-file-table-type');
+		this.factoryFileTypeValue = $('#factory-file-type').find(':selected').val();
+		this.factoryFileTableTypeValue = $('#factory-file-table-type').find(':selected').val();
+		this.referencePeriod = $('#reference-period');
+		this.startDate = $('#start-date');
+		this.endDate = $('#end-date');
+		//Instantiate components
+		this.initFileUploader();
+		this.initLayout();
+		//add events
+		//add factoryFileType changeEvent
+		this.factoryFileType.change(function() {
+			inst.factoryFileTypeValue = inst.factoryFileType.find(':selected').val();
+			inst.fetchReferencePeriods();
+			if(inst.factoryFileTypeValue === 'energy') {
+				inst.factoryFileTableType.val('Losses');
+			}
+		});
+		//add factoryFileTableType changeEvent
+		this.factoryFileTableType.change(function() {
+			if(inst.factoryFileTypeValue === 'energy') {
+				inst.factoryFileTableType.val('Losses');
+			}
+			inst.factoryFileTableTypeValue = inst.factoryFileTableType.find(':selected').val();
+		});
+		//add click event on dropzone
+		$('.dropzone').click(function() {
+			displayDialog("Drag 'n' Drop a file to upload");
+		});
+		//add click event on data-input-button
+		$('#data-input-button').click(function() {
+			inst.dataInputButtonClicked();
+		});
+		$('#start-date-clear').click(function() {
+			inst.startDate.val('');
+		});
+		$('#end-date-clear').click(function() {
+			inst.endDate.val('');
+		});
+	};
+
+	DataLoader.prototype.initFileUploader = function() {
+		if (window.File && window.FileReader && window.FileList && window.Blob) {
+			const fileUploader = new FileUploader(0, this, 2);
+			const fileUploader1 = new FileUploader(1, this, 1);
+			fileUploader.dropTo('.dropzone');
+			fileUploader1.dropTo('.dropzone');
+		} else {
+	  		displayDialog('Your browser does not support File Uploading. Please update or use another browser.');
+		}
+	};
+
+	DataLoader.prototype.initLayout = function() {
+		const inst = this;
+		//clear existing data
+		$('input').val('');
+		$('select').find('option.data-option').remove();
+		//Fetch factoryFileType
+		this.db.collection('/products/np002/factoryFileTypes').get().then(querySnapshot => {
+			querySnapshot.forEach(type => {
+				$("<option class='data-option' value='" + type.id + "'>").appendTo("select#factory-file-type").text(type.data().displayName);
+			});
+		}).catch(err => {
+			console.log(err);
+		});
+		//Fetch referencePeriod according to the factoryFileTypeValue
+		//Fetch recently uploaded files to display
+		this.db.collection('users/' + this.userRef.uid + '/products/np002/factoryFileTypes/').get().then(querySnapshot => {
+			querySnapshot.forEach(type => {
+				
+			});
+		}).catch(error => {
+			console.log(error);
+		});
+	};
+
+	DataLoader.prototype.fetchReferencePeriods = function() {
+		//clear existing data
+		this.referencePeriod.find('option.data-option').remove();
+		if(this.factoryFileTypeValue !== '0') {
+			//fetch respective referencePeriod
+			this.db.collection('users/' + this.userRef.uid + '/products/np002/factoryFileTypes/' + this.factoryFileTypeValue + '/referencePeriod/').get().then(querySnapshot => {
+				querySnapshot.forEach(ref => {
+					$("<option class='data-option' value='" + ref.id + "'>").appendTo("select#reference-period").text(ref.id);
+				});
+			}).catch(err => {
+				console.log(err);
+			});
+		}
+	};
+
+	DataLoader.prototype.dataInputButtonClicked = function() {
+		//check file upload
+		if(this.fileObject === null || this.fileObject === undefined) {
+			displayDialog('Upload an excel file from the dropzone','danger');
+			return;
+		}
+		if(this.factoryFileTypeValue === '0') {
+			displayDialog('Select file type before adding the file','danger');
+			return;
+		}
+		if(this.startDate.val().length > 0 && this.endDate.val().length > 0) {
+			this.createReferencePeriod();
+			return;
+		}
+		this.referencePeriodValue = this.referencePeriod.find(':selected').val();
+		if(this.referencePeriodValue === '0') {
+			displayDialog('Select an existing or create a new Reference Period','danger');
+			return;
+		}
+		//else
+		this.validateDataModel();
+	};
+
+	DataLoader.prototype.addDataFile = function() {
+		//add to firebase
+		const inst = this;
+		var addDataModel;
+		this.factoryFileTableTypeValue = this.factoryFileTableType.find(':selected').val();
+		console.log(this.factoryFileTableTypeValue);
+		switch(this.factoryFileTableTypeValue) {
+			case "Reference Period" : addDataModel = firebase.functions().httpsCallable('addReferencePeriodDataModel'); break;
+			case "Losses" : addDataModel = firebase.functions().httpsCallable('addDataModel'); break;
+			default : displayDialog('Please choose the table type', 'danger'); return;
+		}
+		addDataModel({
+			factoryFileType : inst.factoryFileTypeValue,
+			headersArr : inst.headersRow,
+			fileObject : inst.fileObject,
+			referencePeriod : inst.referencePeriodValue
+		}).then(result => {
+			console.log(result.data);
+			if(result.data) {
+				displayDialog('Data Model Added Successfully', 'success');
+			}
+			else {
+				displayDialog('Operation Failed', 'danger');
+			}
+			//hide fileMeta container
+			inst.dropzoneContainer.removeClass('col-6')
+			inst.dropzoneContainer.addClass('col-12');
+			inst.fileMetaData.addClass('d-none');
+			inst.initLayout();
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	DataLoader.prototype.validateDataModel = function() {
+		const inst = this;
+		var validate;
+		this.factoryFileTableTypeValue = this.factoryFileTableType.find(':selected').val();
+		switch(this.factoryFileTableTypeValue) {
+			case "Reference Period" : validate = firebase.functions().httpsCallable('validateReferencePeriodDataModel'); break;
+			case "Losses" : validate = firebase.functions().httpsCallable('validateDataModel'); break;
+			default : displayDialog('Please choose the table type', 'danger'); return;
+		}
+		return validate({
+			factoryFileType : inst.factoryFileTypeValue,
+			headersArr : inst.headersRow
+		}).then(result => {
+			if(result.data)
+				inst.addDataFile();
+			else
+				displayDialog('Wrong file type. File headers are invalid', 'danger');
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	DataLoader.prototype.createReferencePeriod = function() {
+		const inst = this;
+		this.referencePeriodValue = this.startDate.val() + ' to ' + this.endDate.val();
+		const createRefPeriod = firebase.functions().httpsCallable('addReferencePeriod');
+		return createRefPeriod({
+			factoryFileType : inst.factoryFileTypeValue,
+			fileObject : inst.fileObject,
+			referencePeriod : inst.referencePeriodValue
+		}).then(result => {
+			inst.validateDataModel();
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	DataLoader.prototype.displayFileMetaData = function(data) {
+		//set values
+		this.fileMetaType.text(data.name.substring(data.name.lastIndexOf('.') + 1));
+		this.fileUploadedBy.text(this.userRef.displayName); //TODO : replace with firebase username
+		this.fileMetaSize.text((data.size / 1000).toFixed(2) + ' kb');
+		this.dateNow.text(new Date());
+		//display file meta container
+		this.dropzoneContainer.addClass('col-6')
+		this.dropzoneContainer.removeClass('col-12');
+		this.fileMetaData.removeClass('d-none');
+	};
+
+	DataLoader.prototype.passFileData = function(reqCode, fileObj) {
+		const fileContent = fileObj.content[Object.keys(fileObj.content)[0]];
+		if(reqCode === 0) {
+			this.fileObject = fileObj;
+		}
+		else {
+			this.headersRow = fileContent[0];
+			for(var i = 0; i < this.headersRow.length; i++) {
+				console.log(this.headersRow[i]);
+			}
+		}
+		/*for(var row in fileContent) {
+			console.log(fileContent[row]);
+		}*/
+		if(fileObj !== undefined) {
+			this.displayFileMetaData(fileObj.meta);
+			return;
+		}
+		displayDialog('Invalid file data', 'danger');
+	};
+
+	//FUCNTION TO DISPLAY TEXT DIALOG AT THE TOP
+	function displayDialog(msg, dialogType) {
+		$('html, body').scrollTop(0);
+		var dialogBox = $('.alert-' + dialogType);
+		if(dialogBox.length === 0) //dialogBox with class 'dialogType' does not exsists
+			dialogBox =$('.alert-warning');
+		dialogBox.html(msg);
+		dialogBox.fadeIn();
+		var timer = setInterval(function() {
+			dialogBox.fadeOut();
+			clearInterval(timer);
+		}, 4000);
+	};
+
+	$(document).ready(function() {
+
+		firebase.auth().onAuthStateChanged(function(user) {
+			if(user) {
+				//User is signed in
+				const inspector = new Inspector(user);
+				inspector.checkDisabled();
+				const dataLoader = new DataLoader(user);
+			}
+		});
+	});
+
+</script>
+</head><body>
+	<div class="outer-wrapper container-fluid"></div>
+	<div class="outer-container">
+		<!--bootstrap modal starts -->
+		<div class="modal fade">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<div class="modal-title h4">
+							<!-- fill in the title -->
+						</div>
+						<button type="button" class="close" data-dismiss="modal">&times;</button>
+					</div>
+					<div class="modal-body">
+						<!-- fill in the body -->
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn basic-btn btn-light" data-dismiss="modal">Close</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!--bootstrap modal ends -->
+		<div class="alert alert-success dialog-box text-center"></div>
+		<div class="alert alert-warning dialog-box text-center"></div>
+		<div class="alert alert-danger dialog-box text-center"></div>
+		<div class="header-container container-fluid">
+			<header class="container-fluid row">
+				<div class="container slider-button-container col-1">
+					<div class="container slider-button header-item">
+						<img src="resources/side_bar_slider.png" alt="SLIDE" class="side-bar-slider">
+					</div>
+				</div>
+				<div class="container nav-container col-11">
+					<nav class="container row">
+						<div class="container col-11">
+							<ul class="nav">
+								<li class="nav-item top-nav-item top-nav-item-active header-item">
+									<a class="nav-link active"><small>Overview</small></a>
+								</li>
+								<li class="nav-item top-nav-item header-item">
+									<a href="analyticslayout.html" class="nav-link text-muted"><small>Analytics</small></a>
+								</li>
+							</ul>
+						</div>
+						<div class="container header-item col-1">
+							<div class="d-inline-block m-2 float-right dropdown">
+								<i class="fa fa-chevron-circle-down text-primary d-block dropdown-toggle" data-toggle="dropdown" style="font-size: 170%;"></i>
+								<div class="dropdown-menu">
+									<a href="/products.html" class="dropdown-item text-medium text-low">Home</a>
+									<div class="dropdown-divider"></div>
+									<a class="dropdown-item text-medium text-low" id="nav-signout-icon">Sign Out</a>
+								</div>
+							</div>
+						</div>
+					</nav>
+				</div>
+			</header>
+		</div>
+		<div class="side-bar-container">
+			<ul class="nav flex-column">
+				<li class="nav-item side-nav-item">
+					<a class="nav-link active side-nav-item-active p-2">
+						<img src="resources/load_data.png" alt="Load">
+					</a>
+				</li>
+				<li class="nav-item side-nav-item">
+					<a href="/products/factorymodal/" class="nav-link p-2">
+						<img src="resources/target_settings.png" class="opacity-5" alt="Target">
+					</a>
+				</li>
+				<li class="nav-item side-nav-item">
+					<a href="settings.html" class="nav-link p-2">
+						<img src="resources/standards.png" class="opacity-5" alt="Standards">
+					</a>
+				</li>
+				<li class="nav-item side-nav-item">
+					<a href="preferences.html" class="nav-link p-2">
+						<img src="resources/profile.png" class="opacity-5" alt="Standards">
+					</a>
+				</li>
+			</ul>
+		</div>
+		<div class="main-container bg-light">
+			<main class="container">
+				<div class="container section" id="section-1">
+					<div class="card">
+						<div class="card-body container">
+							<div class="row">
+								<div class="file-upload-container container col-6">
+									<div class="file-type-container row bg-light">
+										<div class="col-4 text-low text-medium font-weight-bold mt-2">File Type</div>
+										<div class="col-4">
+											<select id="factory-file-type" class="select-type-input text-medium text-muted font-weight-light w-100">
+												<option value="0">READ</option>
+												<!-- fetch from firebase -->
+											</select>
+										</div>
+										<div class="col-4">
+											<select id="factory-file-table-type" class="select-type-input text-medium text-muted font-weight-light w-100">
+												<option value="0">TABLE</option>
+												<option>Reference Period</option>
+												<option>Losses</option>
+												<!-- fetch from firebase -->
+											</select>
+										</div>
+									</div>
+									<div class="file-upload-zone row">
+										<div class="col-6">
+											<div class="container file-meta-data d-none">
+												<ul class="nav flex-column">
+													<div class="row nav-item my-2">
+														<div class="col-6 text-muted font-weight-light text-small">Type</div>
+														<div class="col-6 text-low file-meta-type text-small"><!-- file type --></div>
+													</div>
+													<div class="row nav-item my-2">
+														<div class="col-6 text-muted font-weight-light text-small">Uploaded By</div>
+														<div class="col-6 text-low file-uploaded-by text-small"><!-- username --></div>
+													</div>
+													<div class="row nav-item my-2">
+														<div class="col-6 text-muted font-weight-light text-small">Size</div>
+														<div class="col-6 text-low file-meta-size text-small"><!-- file size in mb --></div>
+													</div>
+													<div class="row nav-item my-2">
+														<div class="col-6 text-muted font-weight-light text-small">Creation Date</div>
+														<div class="col-6 text-low date-now text-small"><!-- Today's date --></div>
+													</div>
+												</ul>
+											</div>
+										</div>
+										<div class="col-12 dropzone-container">
+											<div class="dropzone bg-light">
+												<div class="container text-muted">
+													IMPORTER CSV
+													<i class="fa fa-arrow-circle-o-up" style="font-size: 20px; margin-left: 10px;" data-toggle="popover" data-trigger="hover" title="IMPORTER HELP" data-content="You can upload file types of excel, csv and json into the dropzone."></i>
+												</div>
+												<div class="container vertical-center text-muted zone">
+													<span style="text-align: center; display: block;">DROP NEW FILES</span>
+													<i class="fa fa-file-excel-o" style="font-size: 50px; text-align: center; display: block;"></i>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="data-input-container container col-6">
+									<div class="container bg-light data-input-content">
+										<div class="text-muted data-input-header font-weight-light">DATAINPUT</div>
+										<div class="container">
+											<div class="row mb-1 px-3">
+												<div class="col-4 text-low font-weight-bold text-small mt-2">Reference Period:</div>
+												<div class="col-8">
+													<select id="reference-period" class="select-type-input text-medium text-muted font-weight-light w-60">
+														<option value="0">Select Period</option>
+													</select>
+												</div>
+											</div>
+											<div class="container">
+												<i class="fa fa-calendar-o text-muted text-medium date-cal-icon"></i>
+												<div class="text-low font-weight-bold text-small mb-1">Start Date</div>
+												<input type="text" id="start-date" class="date-type-input text-low text-small pl-5 w-75" readonly="readonly">
+												<div class="text-muted d-inline-block close float-none ml-1" data-toggle="tooltip" title="clear date" id="start-date-clear">&times;</div>
+											</div>
+											<div class="container">
+												<i class="fa fa-calendar-o text-muted text-medium date-cal-icon"></i>
+												<div class="text-low font-weight-bold text-small mb-1">End Date</div>
+												<input type="text" id="end-date" class="date-type-input text-low text-small pl-5 w-75" readonly="readonly">
+												<div class="text-muted d-inline-block close float-none ml-1" data-toggle="tooltip" title="clear date" id="end-date-clear">&times;</div>
+											</div>
+											<div class="data-input-add-container">
+												<button type="button" id="data-input-button" class="btn btn-primary px-5 py-2 data-input-add text-medium"><i class="fa fa-plus-circle" style="color: #fff; margin-right: 5px;"></i>ADD</button>
+											</div>
+											<div class="clearfix"></div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="container section" id="section-2">
+					<div class="card">
+						<div class="card-body container">
+							<div class="row">
+								<div class="col-4">
+									<div class="search-box shadow-sm p-2 px-3">
+										<input type="text" id="search-recent-files" class="border-0 text-low" placeholder="Search for something...">
+										<i class="fa fa-search search-icon" style="font-size: 20px; color: #007bff"></i>
+									</div>
+								</div>
+								<div class="col-4">
+									<div class="container filter-box">
+										<div class="d-inline-block text-low">
+											<small>Filter</small><i class="fa fa-filter text-low" style="font-size: 20px; margin-left: 10px; margin-right: 10px;"></i>
+										</div>
+										<button type="button" id="filter-button" class="btn btn-primary px-3 py-1 text-medium">By date</button>
+									</div>
+								</div>
+								<div class="col-4"></div>
+							</div>
+							<div class="container" id="recent-files-container">
+								<div class="container text-low"><small>Recent files</small></div>
+								<div class="row" id="recent-files-placeholder">
+									<div class="col-3">
+										<div class="card">
+											<div class="card-body bg-warning recent-files-card-body">
+												<i class="fa fa-file-text recent-files-card-body-icon text-warning"></i>
+												<span class="recent-files-card-body-text">.CSV</span>
+											</div>
+											<div class="card-footer">
+												<div class="container text-low">
+													<small>MachineData.csv</small>
+													<span class="text-muted d-block"><small>Added 5 Aug 2018</small></span>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="col-3">
+										<div class="card">
+											<div class="card-body bg-warning recent-files-card-body">
+												<i class="fa fa-file-text recent-files-card-body-icon text-warning"></i>
+												<span class="recent-files-card-body-text">.CSV</span>
+											</div>
+											<div class="card-footer">
+												<div class="container text-low">
+													<small>MachineData.csv</small>
+													<span class="text-muted d-block"><small>Added 5 Aug 2018</small></span>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="col-3">
+										<div class="card">
+											<div class="card-body bg-warning recent-files-card-body">
+												<i class="fa fa-file-text recent-files-card-body-icon text-warning"></i>
+												<span class="recent-files-card-body-text">.CSV</span>
+											</div>
+											<div class="card-footer">
+												<div class="container text-low">
+													<small>MachineData.csv</small>
+													<span class="text-muted d-block"><small>Added 5 Aug 2018</small></span>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="col-3">
+										<div class="card">
+											<div class="card-body bg-warning recent-files-card-body">
+												<i class="fa fa-file-text recent-files-card-body-icon text-warning"></i>
+												<span class="recent-files-card-body-text">.CSV</span>
+											</div>
+											<div class="card-footer">
+												<div class="container text-low">
+													<small>MachineData.csv</small>
+													<span class="text-muted d-block"><small>Added 5 Aug 2018</small></span>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</main>
+		</div>
+	</div>
+</body></html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

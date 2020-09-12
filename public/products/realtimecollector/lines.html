@@ -24,7 +24,7 @@
 <script src="https://www.gstatic.com/firebasejs/4.12.0/firebase.js"></script>
 <script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-firestore.js"></script>
 <script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-functions.js"></script>
-<script src="/scripts/main.js"></script>
+<script src="scripts/main.js"></script>
 <script src="/scripts/productchecker.js"></script>
 <script src="/scripts/inspector.js"></script>
 <script>
@@ -36,6 +36,9 @@
 		this.userRef = user;
 		this.db = firebase.firestore();
 		this.lineRef = this.db.collection('users/' + user.uid + '/products/np001/lines');
+		this.productRef = this.db.collection('users').doc(user.uid).collection('products').doc('np001');
+		//Calling initializing functions
+		this.authUser();
 		//Instantiate the layout
 		this.initLayout();
 		//Add event listeners
@@ -44,6 +47,24 @@
 		});
 		$('#edit-line-button').click(function() {
 			inst.editLineEventListener();
+		});
+	};
+
+	Lines.prototype.authUser = function() {
+		this.productRef.get().then(function(p) {
+			if(p.exists) {
+				if(p.data().active) {
+					//Authorized product
+				}
+				else {
+					//Product not authorized
+					window.location.replace('/');
+				}
+			}
+			else 
+				window.location.replace('/');
+		}).catch(function(error) {
+			console.log(error);
 		});
 	};
 

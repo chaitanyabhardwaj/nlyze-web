@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Recorder</title>
+  <link rel="stylesheet" href="../node_modules/bulma/css/bulma.css">
+  <link rel="stylesheet" href="./css/breakdown.css">
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/2.3.0/mustache.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+
+  <!--  App is always required and must be first -->
+
+
+  <script src="https://www.gstatic.com/firebasejs/4.12.0/firebase.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-functions.js"></script>
+
+  <script>
+    var config = {
+      apiKey: "AIzaSyCXWIr6ctkGUGYRvXsYgFG-NnCk6VRW_7Q",
+      authDomain: "nlyze-1.firebaseapp.com",
+      databaseURL: "https://nlyze-1.firebaseio.com",
+      projectId: "nlyze-1",
+      storageBucket: "nlyze-1.appspot.com",
+      messagingSenderId: "285435874741"
+    };
+    firebase.initializeApp(config);
+  </script>
+
+
+  <script defer src="https://use.fontawesome.com/releases/v5.1.0/js/all.js"></script>
+
+</head>
+
+
+
+
+<body onload="getLines();">
+
+  <div class="flexContainer" id="app">
+
+
+
+
+  </div>
+
+</body>
+
+<script src="./js/recorder.js"></script>
+
+</html>

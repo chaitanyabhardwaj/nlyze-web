@@ -4,21 +4,18 @@
 	DESCRIPTION
 	OWNER
 	FAVICON
+ -->
 
-	CONVERT HTML TO JSP
- -->
- <!--
- 	.container - block divs
- 	.inner-container - inline-block divs
- 	Every section of the page contains 'title' and/or 'content', enclosed within that section's container
- -->
-<!DOCTYPE html><html lang="en-US" dir="ltr"><head><meta charset="utf-8"><title>Nlyze Console</title><meta name="description" content="" ><meta name="owner" content=""><meta name="author" content="Chaitanya Bhardwaj" ><base href="nlyze_user_product.html" target="_self" ><meta name="referrer" content="origin-when-cross-origin" ><link rel="icon" type="image/x-icon" href="/resources/favicon_title.png">
+<!DOCTYPE html><html lang="en-US" dir="ltr"><head><meta charset="utf-8"><title>Nlyze Console</title><meta name="description" content="" ><meta name="owner" content=""><meta name="author" content="Chaitanya Bhardwaj" ><base href="nlyze_user_product.html" target="_self" ><meta name="referrer" content="origin-when-cross-origin" ><link rel="icon" type="image/x-icon" href="/resources/favicon_title.png"><meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <link rel="stylesheet" type="text/css" href="stylesheets/basicstyle.css" />
 <link rel="stylesheet" type="text/css" media="screen and (min-width: 1001px)" href="stylesheets/console-large.css" />
 <link rel="stylesheet" type="text/css" href="stylesheets/nlyze_user_product_large.css">
 <link rel="stylesheet" type="text/css" href="/scripts/jquery-ui-1.12.1.custom/jquery-ui.min.css">
-<meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<script src="/scripts/jquery-3.2.1.min.js"></script>
+<link rel="stylesheet" type="text/css" href="lib/bootstrap-4/css/bootstrap.min.css">
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<script src="scripts/jquery-3.2.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+<script src="lib/bootstrap-4/js/bootstrap.min.js"></script>
 <script src="/scripts/jquery-ui-1.12.1.custom/jquery-ui.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/4.12.0/firebase.js"></script>
 <script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-firestore.js"></script>
@@ -34,6 +31,7 @@
 		this.userRef = user;
 		this.authAdmin();
 		this.db = firebase.firestore();
+		this.globalProductsList = [];
 		//Instantiate datepicker
 		$('#add-product-date, #edit-product-date').datepicker({
    			changeMonth : true,
@@ -43,6 +41,9 @@
     		firstDay : 1,
     		yearRange: '+nn:+10'
     	});
+
+    	//fetch the global product collection
+    	this.fetchGlobalProducts();
 		//shortcuts to dom elements
 		this.outerWrapper = $('#outer-wrapper');
 		//add event listeners
@@ -120,6 +121,18 @@
 			});
 		});
 	};
+
+	Product.prototype.fetchGlobalProducts = function() {
+		const inst = this;
+		var i = 0;
+		this.db.collection('products').get().then(querySnapshot => {
+			querySnapshot.forEach(doc => {
+				inst.globalProductsList[i++] = doc;
+			});
+		}).catch(err => {
+			//handle errors
+		});
+	}
 
 	Product.prototype.show = function(elementRef) {
 		this.outerWrapper.show();
@@ -211,26 +224,19 @@
 
 	Product.prototype.fillAddProductValues = function() {
 		const inst = this;
-		var flag;
+		var flag, i;
 		//clear old values
 		$('#add-product-select').find('option.data-option').remove();
-		this.db.collection('products').get().then(querySnapshot => {
-			querySnapshot.forEach(doc => {
-				flag = 1;
-				inst.db.collection('users/' + inst.addUID + '/products').get().then(querySnapshot1 => {
-					querySnapshot1.forEach(doc1 => {
-						if(doc1.id === doc.id) {
-							if(doc1.data().active) {
-								flag = 0;
-							}
+			this.db.collection('users/' + this.addUID + '/products').get().then(querySnapshot => {
+				querySnapshot.forEach(doc => {
+					for(i = 0; i < inst.globalProductsList.length; i++) {
+						if(inst.globalProductsList[i].id !== doc.id) {
+							//display product
+							$("<option data-id='" + inst.globalProductsList[i].id + "' class='data-option product-option'>").appendTo('#add-product-select').text(inst.globalProductsList[i].data().name);
 						}
-					});
-					if(flag) {
-						$("<option data-id='" + doc.id + "' class='data-option product-option'>").appendTo('#add-product-select').text(doc.data().name);
 					}
 				});
 			});
-		});
 	};
 
 	Product.prototype.fillEditProductValues = function() {

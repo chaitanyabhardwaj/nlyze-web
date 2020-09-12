@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en-US" dir="ltr">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>NLYZE | Breakdown</title>
+  <meta name="description" content="" />
+  <meta name="owner" content="Nakul Malhotra">
+  <base href="test.html" target="_self" />
+  <meta name="referrer" content="origin-when-cross-origin" />
+  <link rel="icon" type="image/x-icon">
+
+  <link rel="stylesheet" type="text/css" href="css/default.css" />
+  <link rel="stylesheet" type="text/css" href="css/component.css" />
+  <script src="js/modernizr.custom.js"></script>
+
+  <link rel="stylesheet" href="../bower_components/bootstrap/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link rel="stylesheet" type="text/css" href="css/index-large.css">
+  <script src="js/jquery-3.2.1.min.js"></script>
+
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+  <script href="../bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+
+
+
+  <script src="https://www.gstatic.com/firebasejs/4.12.0/firebase.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-functions.js"></script>
+
+  <script>
+    var config = {
+      apiKey: "AIzaSyCXWIr6ctkGUGYRvXsYgFG-NnCk6VRW_7Q",
+      authDomain: "nlyze-1.firebaseapp.com",
+      databaseURL: "https://nlyze-1.firebaseio.com",
+      projectId: "nlyze-1",
+      storageBucket: "nlyze-1.appspot.com",
+      messagingSenderId: "285435874741"
+    };
+    firebase.initializeApp(config);
+  </script>
+
+</head>
+
+<body onload="getData();">
+
+  <div class="md-modal md-effect-1" id="modal-1">
+    <div class="md-content">
+      <h3>Comment</h3>
+      <div>
+        <p>This is a window is for recording comments: </p>
+        <form id = "detailForm">
+          <div class="form-group">
+            <label for="ID">ID</label>
+            <input type="ID" class="form-control" id="ID" aria-describedby="ID" placeholder="Enter ID">
+          </div>
+          <div class="form-group">
+            <label for="Comment">Context Comment</label>
+            <textarea class="form-control" id="Email" rows="3" placeholder="Enter comment"></textarea>
+          </div>
+
+        </form>
+
+        <button class="btn btn-primary btn-lg btn-block" onclick="removeModalF();">Done</button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="md-modal md-effect-1" id="modal-2">
+    <div class="md-content">
+      <h3>Comment</h3>
+      <div>
+        <p>This is a window is for recording IDs: </p>
+        <form id = "detailFormL">
+          <div class="form-group">
+            <label for="ID">ID</label>
+            <input type="ID" class="form-control" id="IDL" aria-describedby="ID" placeholder="Enter ID">
+          </div>
+        </form>
+
+        <button class="btn btn-primary btn-lg btn-block" onclick="removeModalL();">Done</button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="outer-wrapper container-fluid"></div>
+  <div class="outer-container">
+
+    <div class="header-container container-fluid">
+      <header class="container-fluid row">
+        <div class="container nav-container col-11">
+          <nav class="container row">
+            <div class="container col-11">
+              <ul class="nav">
+                <li class="nav-item top-nav-item header-item">
+                  <a href="log.html" class="nav-link text-muted"><small>Data Log</small></a>
+                </li>
+                <li class="nav-item top-nav-item header-item">
+                  <a href="reports.html" class="nav-link text-muted"><small>Analytics</small></a>
+                </li>
+                <li class="nav-item top-nav-item header-item">
+                  <a href="workforce.html" class="nav-link text-muted"><small>Workforce</small></a>
+                </li>
+                <li class="nav-item top-nav-item top-nav-item-active header-item">
+                  <a href="recorder.html" class="nav-link active"><small>Breakdown</small></a>
+                </li>
+                <li class="nav-item top-nav-item header-item">
+                  <a href="shiftTimes.html" class="nav-link text-muted"><small>Shift Times</small></a>
+                </li>
+              
+              </ul>
+            </div>
+            <div class="container header-item col-1">
+              <a href="#" class="btn btn-primary px-3 py-1 text-small mt-2">Home</a>
+            </div>
+          </nav>
+        </div>
+      </header>
+    </div>
+
+    <div class="main-container ">
+
+      <div class="container ">
+
+        <div class="input-group mt-3 mb-3">
+          <div class="input-group-prepend">
+            <span class="input-group-text" id="">Shift Times</span>
+          </div>
+          <input id='shift-1' type="text" class="form-control shift">
+          <input id='shift-2' type="text" class="form-control shift">
+          <input id='shift-3' type="text" class="form-control shift">
+        </div>
+      </div>
+
+
+
+
+      <div class="section" id="section-2">
+        <div class="card mt-5 w-75 mx-auto card-body">
+
+          <button id='btn-1' type="button" name="first" class="btn btn-primary btn-lg btn-block breakdown md-trigger" data-modal="modal-2" onclick="enableButton('btn-2');disableButton('btn-1');show('btn-1')"> Breakdown Start </button>
+          <button id='btn-2' type="button" name="second" class="btn btn-primary btn-lg btn-block breakdown  md-trigger" data-modal="modal-2" onclick="enableButton('btn-3');disableButton('btn-2');show('btn-2')" disabled> Repair Start </button>
+          <button id='btn-3' type="button" name="third" class="btn btn-primary btn-lg btn-block breakdown md-trigger" data-modal="modal-1"  onclick="enableButton('btn-4');disableButton('btn-3');show('btn-3')" disabled> Repair End </button>
+          <button id='btn-4' type="button" name="fourth" class="btn btn-primary btn-lg btn-block breakdown md-trigger" data-modal="modal-1" onclick="show('btn-4')" disabled> Breakdown Ended </button>
+
+        </div>
+
+      </div>
+
+
+
+    </div>
+
+    <!-- classie.js by @desandro: https://github.com/desandro/classie -->
+    <script src="js/classie.js"></script>
+    <script src="js/modalEffects.js"></script>
+
+    <!-- for the blur effect -->
+    <!-- by @derSchepp https://github.com/Schepp/CSS-Filters-Polyfill -->
+    <script>
+      // this is important for IEs
+      var polyfilter_scriptpath = '/js/';
+    </script>
+    <script src="js/cssParser.js"></script>
+
+</body>
+
+
+<script src="./js/index.js"></script>
+
+
+
+</html>

@@ -46,9 +46,6 @@ ProductChecker.prototype.checkProductActive = function() {
 								});
 							}
 						}
-						else {
-							console.log("Can't match product with global list");
-						}
 					});
 				});
 			}

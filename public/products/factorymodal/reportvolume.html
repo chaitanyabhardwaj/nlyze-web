@@ -1,0 +1,979 @@
+<!DOCTYPE html><html lang="en-US" dir="ltr"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" /><title>NLYZE | Factory Model</title><meta name="description" content="" /><meta name="owner" content="Nakul Malhotra"><meta name="author" content="Chaitanya Bhardwaj" /><base href="reportvolume.html" target="_self" /><meta name="referrer" content="origin-when-cross-origin" /><link rel="icon" type="image/x-icon" href="/resources/favicon_title.png" /><meta name="robots" content="index, nofollow">
+<link rel="stylesheet" type="text/css" href="lib/bootstrap-4/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" type="text/css" href="stylesheets/index-large.css">
+<link rel="stylesheet" type="text/css" href="stylesheets/reportvolume-large.css">
+<script src="scripts/jquery-3.2.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+<script src="lib/bootstrap-4/js/bootstrap.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-functions.js"></script>
+<script src="/scripts/main.js"></script>
+<script src="/scripts/productchecker.js"></script>
+<script src="/scripts/inspector.js"></script>
+<script src="scripts/Chart.bundle.min.js"></script>
+<script>
+	
+	'use strict';
+
+	//Initializing ReportMaterial
+	function ReportMaterial(user) {
+		const inst = this;
+		this.userRef = user;
+		//Initialize firestore
+		this.db = firebase.firestore();
+		//get DOM shortcuts
+		this.currentMaterialEfficiencyDOM = $('.material-efficiency-current-value');
+		this.currentWasteDOM = $('.waste-current-value');
+		this.visionMaterialEfficiencyDOM = $('.material-efficiency-vision-value');
+		this.visionWasteDOM = $('.waste-vision-value');
+		this.materialEfficiencyChangeStrDOM = $('.material-efficiency-increase-str');
+		this.wasteChangeStrDOM = $('.waste-increase-str');
+		this.materialEfficiencyChangeValueDOM = $('.material-efficiency-increase-value');
+		this.wasteChangeValueDOM = $('.waste-increase-value');
+		this.materialEfficiencyArrow = $('.material-efficiency-arrow img');
+		this.wasteArrow = $('.waste-arrow img');
+
+		this.referencePeriod = $('.reference-period-select');
+		this.line = $('.line-select');
+
+		this.graphicRepresentationUnit = 'LBS'; //default value [changable with 'kUSD']
+		this.graphicRepresentationUnitLbs = $('.graphic-representation-toggle-lbs');
+		this.graphicRepresentationUnitKusd = $('.graphic-representation-toggle-kusd');
+		this.graphicRepresentationFamText = $('.graphic-representation-fam-text');
+		this.graphicRepresentationFamArrow = $('.graphic-representation-fam-arrow');
+
+		this.referenceVisionUnit = 'LBS'; //default value [changable with 'kUSD']
+		this.referenceVisionUnitLbs = $('.reference-vision-toggle-lbs');
+		this.referenceVisionUnitKusd = $('.reference-vision-toggle-kusd');
+
+		this.paretoOption1 = $('.pareto-option-1');
+		this.paretoOption2 = $('.pareto-option-2');
+		this.paretoOption3 = $('.pareto-option-3');
+
+		//set event listeners
+		this.referencePeriod.change(function() {
+			inst.onComponentChanged();
+		});
+		this.line.change(function() {
+			inst.onComponentChanged();
+		});
+
+		this.graphicRepresentationUnitLbs.click(function() {
+			if(inst.graphicRepresentationUnit === 'kUSD') {
+				//change to LBS
+				inst.graphicRepresentationUnit = 'LBS';
+				inst.initGraphicRepresentation();
+			}
+		});
+		this.graphicRepresentationUnitKusd.click(function() {
+			if(inst.graphicRepresentationUnit === 'LBS') {
+				//change to kUSD
+				inst.graphicRepresentationUnit = 'kUSD';
+				inst.initReferenceVisionGraph();
+			}
+		});
+
+		this.referenceVisionUnitLbs.click(function() {
+			if(inst.referenceVisionUnit === 'kUSD') {
+				//change to LBS
+				inst.referenceVisionUnit = 'LBS';
+				inst.initReferenceVisionGraph();
+			}
+		});
+		this.referenceVisionUnitKusd.click(function() {
+			if(inst.referenceVisionUnit === 'LBS') {
+				//change to kUSD
+				inst.referenceVisionUnit = 'kUSD';
+				inst.initReferenceVisionGraph();
+			}
+		});
+
+		this.paretoOption1.click(function() {
+			if(inst.paretoOption1.text() === 'Losses' && inst.paretoOption2.text() === 'Family') {
+				inst.paretoOption1.text('Potentials');
+				inst.initParetoGraph(inst.getParetoDataSet());
+				return;
+			}
+			if(inst.paretoOption1.text() === 'Potentials' && inst.paretoOption2.text() === 'Family') {
+				inst.paretoOption1.text('Losses');
+				inst.initParetoGraph(inst.getParetoDataSet());
+				return;
+			}
+		});
+		this.paretoOption2.click(function() {
+			if(inst.paretoOption2.text() === 'Family' && inst.paretoOption1.text() === 'Potentials') {
+				inst.paretoOption2.text('Loss');
+				inst.initParetoGraph(inst.getParetoDataSet());
+				return;
+			}
+			if(inst.paretoOption2.text() === 'Loss') {
+				inst.paretoOption2.text('Family');
+				inst.initParetoGraph(inst.getParetoDataSet());
+				return;
+			}
+		});
+		this.paretoOption3.click(function() {
+			if(inst.paretoOption3.text() === '(lbs)')
+				inst.paretoOption3.text('(kUSD)');
+			else
+				inst.paretoOption3.text('(lbs)');
+			inst.initParetoGraph(inst.getParetoDataSet());
+		});
+
+		//Calling init functions
+		this.pullData();
+		this.initLayout();
+	};
+
+	ReportMaterial.prototype.initLayout = function() {
+		//clear existing data
+		$('input').val('');
+		$('select').find('option.data-option').remove();
+		//fetch referencePeriod
+		this.initReferencePeriod();
+		//fetch line data
+		this.initLines();
+	};
+
+	ReportMaterial.prototype.initGraphs = function() {
+		this.initReferenceVisionGraph();
+		this.initParetoGraph();
+	};
+
+	ReportMaterial.prototype.pullData = function() {
+		this.pullFamilyData();
+		this.pullLossData();
+	};
+
+	ReportMaterial.prototype.pullDataWithVersion = function() {
+		const inst = this;
+		const referencePeriodRef = this.db.doc('users/' + this.userRef.uid + '/products/np002/factoryFileTypes/material/referencePeriod/' + this.referencePeriodValue);
+		referencePeriodRef.get().then(doc => {
+			if(doc.exists) {
+				if(doc.data().initialWritten) {
+					if(doc.data().updatedWritten) {
+						//pull and store updated table data
+						inst.pullReferencePeriodData('updated');
+						inst.pullAfterVisionData('updated');
+						inst.pullLossesData('updated');
+					}
+					else {
+						//pull and store initial table data
+						inst.pullReferencePeriodData('initial');
+						inst.pullAfterVisionData('initial');
+						inst.pullLossesData('initial');
+					}
+				}
+				else {
+					displayDialog("Cannot find the Reference Period table. Upload Reference Period or contact support.", "danger");
+				}
+			}
+			else {
+				displayDialog("Cannot find the Reference Period table. Upload Reference Period or contact support.", "danger");
+			}
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	ReportMaterial.prototype.initReferencePeriod = function() {
+		this.db.collection('users/' + this.userRef.uid + '/products/np002/factoryFileTypes/material/referencePeriod/').get().then(querySnapshot => {
+			querySnapshot.forEach(ref => {
+				$("<option class='data-option' value='" + ref.id + "'>").appendTo(".reference-period-select").text(ref.id);
+			});
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	ReportMaterial.prototype.initLines = function() {
+
+	};
+
+	ReportMaterial.prototype.pullReferencePeriodData = function(version) {
+		const inst = this;
+		this.refPArr = [];
+		var i = 0;
+		this.db.collection('users/' + this.userRef.uid + '/products/np002/factoryFileTypes/material/referencePeriod/' + this.referencePeriodValue + '/' + version + 'ReferencePeriod').orderBy('id').get().then(querySnapshot => {
+			querySnapshot.forEach(refP => {
+				inst.refPArr[i++] = refP.data();
+			});
+			//get current matEff and current waste
+			const matEffCurrent = inst.getMatEffCurrent();
+			const wasteCurrent = inst.getWasteCurrent();
+			//display matEff and waste current
+			inst.displayMatEffCurrent(matEffCurrent);
+			inst.displayWasteCurrent(wasteCurrent);
+			//display change matEff and change waste
+			if(inst.afterVisionArr.length > 0) {
+				inst.displayMatEffChange(inst.getMatEffCurrent(), matEffVision);
+				inst.displayWasteChange(inst.getWasteCurrent(), wasteVision);
+			}
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	ReportMaterial.prototype.pullAfterVisionData = function(version) {
+		const inst = this;
+		this.afterVisionArr = [];
+		var i = 0;
+		this.db.collection('users/' + this.userRef.uid + '/products/np002/factoryFileTypes/material/referencePeriod/' + this.referencePeriodValue + '/' + version + 'AfterVision').orderBy('id').get().then(querySnapshot => {
+			querySnapshot.forEach(vision => {
+				inst.afterVisionArr[i++] = vision.data();
+			});
+			//get vision matEff and vision waste
+			const matEffVision = inst.getMatEffVision();
+			const wasteVision = inst.getWasteVision();
+			//display matEff and wasteVision
+			inst.displayMatEffVision(matEffVision)
+			inst.displayWasteVision(wasteVision);
+			//display change matEff and change waste
+			if(inst.refPArr.length > 0) {
+				inst.displayMatEffChange(inst.getMatEffCurrent(), matEffVision);
+				inst.displayWasteChange(inst.getWasteCurrent(), wasteVision);
+			}
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	ReportMaterial.prototype.pullLossesData = function(version) {
+		const inst = this;
+		this.lossesArr = [];
+		var i = 0, j = 0, k = 0;
+		this.db.collection('users/' + this.userRef.uid + '/products/np002/factoryFileTypes/material/referencePeriod/' + this.referencePeriodValue + '/' + version + 'FileObj').get().then(querySnapshot => {
+			querySnapshot.forEach(obj => {
+				if(obj.id !== 'headers') {
+					inst.lossesArr[i++] = obj.data();
+				}
+				else {
+					inst.lossesHeaderArr = obj.data();
+				}
+			});
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	ReportMaterial.prototype.pullPotentialsData = function(version) {
+		const inst = this;
+		this.potentialsArr = [];
+		var i = 0;
+		this.db.collection('users/' + this.userRef.uid + '/products/np002/factoryFileTypes/material/referencePeriod/' + this.referencePeriodValue + '/' + version + 'PotentialObj').get().then(querySnapshot => {
+			querySnapshot.forEach(obj => {
+				if(obj.id !== 'headers') {
+					inst.potentialsArr[i++] = obj.data();
+				}
+				else {
+					inst.potentialsHeaderArr = obj.data();
+				}
+			});
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	ReportMaterial.prototype.pullFamilyData = function() {
+		const inst = this;
+		this.famArr = [];
+		var i = 0;
+		this.db.collection('users/' + this.userRef.uid + '/products/np002/factoryFileTypes/material/family').get().then(querySnapshot => {
+			querySnapshot.forEach(fam => {
+				inst.famArr[i++] = fam.data();
+			});
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	ReportMaterial.prototype.pullLossData = function() {
+		const inst = this;
+		this.lossArr = [];
+		var i = 0;
+		this.db.collection('users/' + this.userRef.uid + '/products/np002/factoryFileTypes/material/loss').get().then(querySnapshot => {
+			querySnapshot.forEach(loss => {
+				inst.lossArr[i++] = loss.data();
+			});
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	ReportMaterial.prototype.getMatEffCurrent = function() {
+		//MatEff = (refP[id = 0] / (refP[id = 0] + refP[id = 1])) * 100;
+		return ((this.refPArr[0].value / (this.refPArr[0].value + this.refPArr[1].value)) * 100);
+	};
+
+	ReportMaterial.prototype.getWasteCurrent = function() {
+		//MatEff = (refP[id = 1] / (refP[id = 0] + refP[id = 1])) * 100;
+		return ((this.refPArr[1].value / (this.refPArr[0].value + this.refPArr[1].value)) * 100);
+	};
+
+	ReportMaterial.prototype.getMatEffVision = function() {
+		//MatEff = afterVision[id = 0] / (afterVision[id = 0] + afterVision[id = 1])) * 100;
+		return ((this.afterVisionArr[0].value / (this.afterVisionArr[0].value + this.afterVisionArr[1].value)) * 100);
+	};
+
+	ReportMaterial.prototype.getWasteVision = function() {
+		//waste = afterVision[id = 1] / (afterVision[id = 0] + afterVision[id = 1])) * 100;
+		return ((this.afterVisionArr[1].value / (this.afterVisionArr[0].value + this.afterVisionArr[1].value)) * 100);
+	};
+
+	ReportMaterial.prototype.getLossesTotalInLbs = function() {
+		//lbs total = lossesHeaderArr(id = 5)
+		var sum = 0;
+		const headerName = this.lossesHeaderArr[5];
+		for(var i = 0; i < this.lossesArr.length; i++)
+			sum += this.lossesArr[i][headerName];
+		return sum;
+	};
+
+	ReportMaterial.prototype.getLossesTotalInKusd = function() {
+		//kUSD total = lossesHeaderArr(id = 8)
+		var sum = 0;
+		const headerName = this.lossesHeaderArr[8];
+		for(var i = 0; i < this.lossesArr.length; i++)
+			sum += this.lossesArr[i][headerName];
+		return sum;
+	};
+
+	ReportMaterial.prototype.getPotentialsTotalInLbs = function() {
+		//lbs total = potentialsHeaderArr(id = 2)
+		var sum = 0;
+		const headerName = this.potentialsHeaderArr[2];
+		for(var i = 0; i < this.potentialsArr.length; i++)
+			sum += this.potentialsArr[i][headerName];
+		return sum;
+	};
+
+	ReportMaterial.prototype.getPotentialsTotalInKusd = function() {
+		//kUSD total = potentialsHeaderArr(id = 5)
+		var sum = 0;
+		const headerName = this.potentialsHeaderArr[5];
+		for(var i = 0; i < this.potentialsArr.length; i++)
+			sum += this.potentialsArr[i][headerName];
+		return sum;
+	};
+
+	ReportMaterial.prototype.getLossesTotalByFamilyInLbs = function() {
+		//lbs total = lossesHeaderArr(id = 5)
+		const lbsHeaderName = this.lossesHeaderArr[5];
+		const famHeaderName = this.lossesHeaderArr[2];
+		var familyName;
+		var sum = new Array(this.famArr.length).fill(0);
+		for(var i = 0; i < this.famArr.length; i++) {
+			familyName = this.famArr[i].name;
+			for(var j = 0; j < this.lossesArr.length; j++) {
+				if(familyName === this.lossesArr[j][famHeaderName]) {
+					sum[familyName] += this.lossesArr[j][lbsHeaderName];
+				}
+			}
+		}
+		return sum;
+	};
+
+	ReportMaterial.prototype.getLossesTotalByFamilyInKusd = function() {
+		//kUSD total = lossesHeaderArr(id = 8)
+		const kusdHeaderName = this.lossesHeaderArr[8];
+		const famHeaderName = this.lossesHeaderArr[2];
+		var familyName;
+		var sum = new Array(this.famArr.length).fill(0);
+		for(var i = 0; i < this.famArr.length; i++) {
+			familyName = this.famArr[i].name;
+			for(var j = 0; j < this.lossesArr.length; j++) {
+				if(familyName === this.lossesArr[j][famHeaderName]) {
+					sum[familyName] += this.lossesArr[j][kusdHeaderName];
+				}
+			}
+		}
+		return sum;
+	};
+
+	ReportMaterial.prototype.getPotentialsTotalByFamilyInLbs = function() {
+		//lbs total = potentialsHeaderArr(id = 2)
+		const famHeaderName = this.lossesHeaderArr[2];
+		const lbsHeaderName = this.potentialsHeaderArr[2];
+		var familyName;
+		var sum = new Array(this.famArr.length).fill(0);
+		for(var i = 0; i < this.famArr.length; i++) {
+			familyName = this.famArr[i].name;
+			for(var j = 0; j < this.potentialsArr.length; j++) {
+				if(familyName === this.lossesArr[j][famHeaderName]) {
+					sum[i] += this.potentialsArr[j][lbsHeaderName];
+				}
+			}
+		}
+		return sum;
+	};
+
+	ReportMaterial.prototype.getPotentialsTotalByFamilyInKusd = function() {
+		//kUSD total = potentialsHeaderArr(id = 5)
+		const famHeaderName = this.lossesHeaderArr[2];
+		const kusdHeaderName = this.potentialsHeaderArr[5];
+		var familyName;
+		var sum = new Array(this.famArr.length).fill(0);
+		for(var i = 0; i < this.famArr.length; i++) {
+			familyName = this.famArr[i].name;
+			for(var j = 0; j < this.potentialsArr.length; j++) {
+				if(familyName === this.lossesArr[j][famHeaderName]) {
+					sum[i] += this.potentialsArr[j][kusdHeaderName];
+				}
+			}
+		}
+		return sum;
+	};
+
+	ReportMaterial.prototype.getPotentialsTotalByLossInLbs = function() {
+		//lbs total = potentialsHeaderArr(id = 2)
+		const lossHeaderName = this.lossesHeaderArr[1];
+		const lbsHeaderName = this.potentialsHeaderArr[2];
+		var lossName;
+		var sum = new Array(this.lossArr.length).fill(0);
+		for(var i = 0; i < this.lossArr.length; i++) {
+			lossName = this.lossArr[i].name;
+			for(var j = 0; j < this.potentialsArr.length; j++) {
+				if(lossName === this.lossesArr[j][lossHeaderName]) {
+					sum[i] += this.potentialsArr[j][lbsHeaderName];
+				}
+			}
+		}
+		return sum;
+	};
+
+	ReportMaterial.prototype.getPotentialsTotalByLossInKusd = function() {
+		//kUSD total = potentialsHeaderArr(id = 5)
+		const lossHeaderName = this.lossesHeaderArr[1];
+		const kusdHeaderName = this.potentialsHeaderArr[5];
+		var lossName;
+		var sum = new Array(this.lossArr.length).fill(0);
+		for(var i = 0; i < this.lossArr.length; i++) {
+			lossName = this.lossArr[i].name;
+			for(var j = 0; j < this.potentialsArr.length; j++) {
+				if(lossName === this.lossesArr[j][lossHeaderName]) {
+					sum[i] += this.potentialsArr[j][kusdHeaderName];
+				}
+			}
+		}
+		return sum;
+	};
+
+	ReportMaterial.prototype.displayMatEffCurrent = function(matEff) {
+		displayNumberCount(0, matEff, '%', this.currentMaterialEfficiencyDOM);
+	};
+
+	ReportMaterial.prototype.displayWasteCurrent = function(waste) {
+		displayNumberCount(0, waste, '%', this.currentWasteDOM);
+	};
+
+	ReportMaterial.prototype.displayMatEffVision = function(matEff) {
+		displayNumberCount(0, matEff, '%', this.visionMaterialEfficiencyDOM);
+	};
+
+	ReportMaterial.prototype.displayWasteVision = function(waste) {
+		displayNumberCount(0, waste, '%', this.visionWasteDOM);
+	};
+
+	ReportMaterial.prototype.displayMatEffChange = function(matEffCurrent, matEffVision) {
+		var change;
+		if(matEffVision >= matEffCurrent) {
+			change = matEffVision - matEffCurrent;
+			this.materialEfficiencyChangeStrDOM.val('Increase');
+			displayNumberCount(matEffCurrent, change, '%', this.materialEfficiencyChangeValueDOM);
+			this.materialEfficiencyArrow.attr('src','resources/up_arrow_green.png');
+		}
+		else {
+			change = matEffCurrent - matEffVision;
+			this.materialEfficiencyChangeStrDOM.val('Decrease');
+			displayNumberCount(matEffVision, change, '%', this.materialEfficiencyChangeValueDOM);
+			this.materialEfficiencyArrow.attr('src','resources/down_arrow_red.png');
+		}
+	};
+
+	ReportMaterial.prototype.displayWasteChange = function(wasteCurrent, wasteVision) {
+		var change;
+		if(wasteVision >= wasteCurrent) {
+			change = wasteVision - wasteCurrent;
+			this.wasteChangeStrDOM.val('Increase');
+			displayNumberCount(wasteCurrent, change, '%', this.wasteChangeValueDOM);
+			this.wasteArrow.attr('src','resources/up_arrow_green.png');
+		}
+		else {
+			change = wasteCurrent - wasteVision;
+			this.wasteChangeStrDOM.val('Decrease');
+			displayNumberCount(wasteVision, change, '%', this.wasteChangeValueDOM);
+			this.wasteArrow.attr('src','resources/down_arrow_red.png');
+		}
+	};
+
+	ReportMaterial.prototype.initGraphicRepresentation = function() {
+		//get losses total by family
+		var sumOfFam;
+		if(this.graphicRepresentationUnit === 'LBS') {
+			sumOfFam = this.getLossesTotalByFamilyInLbs();
+		}
+		else {
+			sumOfFam = this.getLossesTotalByFamilyInKusd();
+		}
+		$.each(this.famArr, (i, family) => {
+			//get html dom for the family
+			this.graphicRepresentationFamText.filter("[data-fam='" + family.name + "']").text(sumOfFam[family.name]);
+			this.graphicRepresentationFamArrow.filter("[data-fam='" + family.name + "']").attr('fill', family.color);
+		});
+	};
+
+	ReportMaterial.prototype.initReferenceVisionGraph = function() {
+		const ctx = document.getElementsByClassName("reference-vision-graph-canvas")[0].getContext('2d');
+		const gradientLine = ctx.createLinearGradient(0, 0, 0, 100); 
+    	gradientLine.addColorStop(0, 'rgba(0, 119, 255, 1)');
+    	gradientLine.addColorStop(1, 'rgba(0, 242, 254, 1)');
+    	var lossesTotal, potentialsTotal;
+    	if(this.referenceVisionUnit === 'LBS') {
+    		lossesTotal = this.getLossesTotalInLbs();
+    		potentialsTotal = this.getPotentialsTotalInLbs();
+    	}
+    	else {
+    		lossesTotal = this.getLossesTotalInKusd();
+    		potentialsTotal = this.getPotentialsTotalInKusd();
+    	}
+		const chart = new Chart(ctx, {
+			type : 'bar',
+			data : {
+				labels : ['Reference', 'Vision'],
+				datasets : [{
+					label : [''],
+					data : [potentialsTotal, lossesTotal],
+					borderColor : gradientLine,
+					pointBackgroundColor : 'rgba(255,255,255,1)',
+					pointBorderColor : 'rgba(245,245,245,1)',
+					pointHoverBackgroundColor : 'rgba(255,255,255,1)',
+					pointHoverBorderColor : 'rgba(235,235,235,1)',
+					pointRadius : 4,
+					pointHoverRadius : 5,
+					fill : false,
+					type : 'line'
+				},
+				{
+					label : [''],
+					data : [lossesTotal,potentialsTotal],
+					backgroundColor : [
+						'rgba(52,58,64,1)',
+						'rgba(52,58,64,1)'
+					],
+					borderColor : [
+						'rgba(52,58,64,1)',
+						'rgba(52,58,64,1)',
+					],
+					borderWidth : 1.5,
+				},
+				{
+					label : [''],
+					data : [0, (lossesTotal - potentialsTotal)],
+					backgroundColor : [
+						'rgba(52,58,64,1)',
+						'rgba(52,58,64,1)'
+					],
+					borderColor : [
+						'rgba(52,58,64,1)',
+						'rgba(52,58,64,1)',
+					],
+					borderWidth : 1.5,
+				}]
+			},
+			options: {
+				responsive : true,
+				maintainAspectRatio : false,
+				showAllTooltips: false, 
+				legend : { display : false },
+        		scales : {
+    				xAxes: [{
+    					stacked : true,
+    					ticks : {
+    						fontColor : '#696969',
+    						fontSize : 9
+    					},
+                		gridLines: {
+                    		display:false,
+                    		drawBorder : false
+                		}
+            		}],
+    				yAxes: [{
+    					stacked : true,
+    					ticks : {
+    						display : true,
+    						stepSize : 20,
+    						max : 100,
+    						min : 0,
+    						fontSize : 10,
+    					},
+                		gridLines: {
+                			display : true,
+                			drawBorder : false,
+                		}   
+            		}]
+    			},
+    			tooltips : {
+    				yAlign : 'bottom',
+    				titleFontSize : 0,
+    				backgroundColor : 'rgba(0,0,0,0)',
+    				bodyFontColor : '#000',
+    				bodyFontSize : 0,
+    				bodyFontStyle : 'bold',
+    				footerFontColor : '#000',
+    				displayColors : false
+    			},
+    		}
+		});
+	};
+
+	ReportMaterial.prototype.initParetoGraph = function(dataArr) {
+		const inst = this;
+		const ctx = document.getElementsByClassName("pareto-graph-canvas")[0].getContext('2d');
+		var dataNameArr, dataColorArr;
+		if(this.paretoOption2.text() === 'Family') {
+			dataNameArr = this.famArr.map(a => a.name);
+			dataColorArr = this.famArr.map(b => b.color); 
+		}
+		else {
+			dataNameArr = this.lossArr.map(a => a.name);
+			dataColorArr = this.lossArr.map(b => b.color); 	
+		}
+		const chart = new Chart(ctx, {
+			type : 'bar',
+			data : {
+				labels : dataNameArr,
+				datasets : [{
+					label : dataArr,
+					data : dataArr,
+					backgroundColor : dataColorArr,
+					borderColor : dataColorArr,
+					borderWidth : 1,
+				}]
+			},
+			options: {
+				responsive : true,
+				maintainAspectRatio : false,
+				showAllTooltips: false, 
+				legend : { display : false },
+        		scales : {
+    				xAxes: [{
+    					stacked : true,
+    					ticks : {
+    						fontColor : '#696969',
+    						fontSize : 9
+    					},
+                		gridLines: {
+                    		display:false,
+                    		drawBorder : false
+                		}
+            		}],
+    				yAxes: [{
+    					stacked : true,
+    					ticks : {
+    						display : true,
+    						stepSize : 20,
+    						max : 100,
+    						min : 0,
+    						fontSize : 10,
+    					},
+                		gridLines: {
+                			display : true,
+                			drawBorder : false,
+                		}   
+            		}]
+    			},
+    			tooltips : {
+    				yAlign : 'bottom',
+    				titleFontSize : 0,
+    				backgroundColor : 'rgba(0,0,0,0)',
+    				bodyFontColor : '#000',
+    				bodyFontSize : 0,
+    				bodyFontStyle : 'bold',
+    				footerFontColor : '#000',
+    				displayColors : false
+    			},
+    		}
+		});
+	};
+
+	ReportMaterial.prototype.getParetoLossesByFamilyInLbs = function() {
+		return this.getLossesTotalByFamilyInLbs();
+	};
+
+	ReportMaterial.prototype.getParetoLossesByFamilyInKusd = function() {
+		return this.getLossesTotalByFamilyInKusd();
+	};
+
+	ReportMaterial.prototype.getParetoPotentialsByFamilyInLbs = function() {
+		return this.getPotentialsTotalByFamilyInLbs();
+	};
+
+	ReportMaterial.prototype.getParetoPotentialsByFamilyInKusd = function() {
+		return this.getPotentialsTotalByFamilyInKusd();
+	};
+
+	ReportMaterial.prototype.getParetoPotentialsByLossInLbs = function() {
+		return this.getPotentialsTotalByLossInLbs();
+	};
+
+	ReportMaterial.prototype.getParetoPotentialsByLossInKusd = function() {
+		return this.getPotentialsTotalByLossInKusd();
+	};
+
+	ReportMaterial.prototype.getParetoDataSet = function() {
+		if(this.paretoOption1.text() === 'Losses') {
+			//paretoOption2 in this case will always be 'Family'
+			if(this.paretoOption3.text() === '(lbs)')
+				return this.getParetoLossesByFamilyInLbs();
+			//else
+			return this.getParetoLossesByFamilyInKusd();
+		}
+		//else
+		//paretoOption1 in this case is 'Potentials'
+		if(this.paretoOption2.text() === 'Family') {
+			if(this.paretoOption3.text() === '(lbs)')
+				return this.getParetoPotentialsByFamilyInLbs();
+			//else
+			return this.getParetoPotentialsByFamilyInKusd();
+		}
+		//esle
+		//paretoOption2 in this case is 'Loss'
+		if(this.paretoOption3.text() === '(lbs)')
+			return this.getParetoPotentialsByLossInLbs();
+		//else
+		return this.getParetoPotentialsByLossInKusd();
+	};
+
+	ReportMaterial.prototype.onComponentChanged = function() {
+		this.referencePeriodValue = this.referencePeriod.find(':selected').val();
+		this.lineValue = this.line.find(':selected').val();
+		if(this.referencePeriodValue != 0 && this.lineValue != 0) {
+			this.pullDataWithVersion();
+			this.initGraphs();
+		}
+	};
+
+	//FUNCTION TO DISPLAY NUMBERS IN INCREASING OR DECREASING EFFECT
+	function displayNumberCount(start, end, str, targetElement) {
+		//NOTE : Try to keep the start-end diff not more than 250
+		var timer = setInterval(function() {
+			targetElement.text((start++) + str);
+			if(start > end)
+				clearInterval(timer);
+		}, 7);
+	};
+
+	//FUCNTION TO DISPLAY TEXT DIALOG AT THE TOP
+	function displayDialog(msg, dialogType) {
+		$('html, body').scrollTop(0);
+		var dialogBox = $('.alert-' + dialogType);
+		if(dialogBox.length === 0) //dialogBox with class 'dialogType' does not exists
+			dialogBox =$('.alert-warning');
+		dialogBox.html(msg);
+		dialogBox.fadeIn();
+		var timer = setInterval(function() {
+			dialogBox.fadeOut();
+			clearInterval(timer);
+		}, 4000);
+	};
+
+	$(document).ready(function() {
+		firebase.auth().onAuthStateChanged(function(user) {
+			if(user) {
+				//User is signed in
+				const inspector = new Inspector(user);
+				inspector.checkDisabled();
+				const reportMaterial = new ReportMaterial(user);
+			}
+		});
+	});
+
+</script>
+</head><body>
+	<div class="outer-wrapper container-fluid"></div>
+	<div class="outer-container">
+		<div class="alert alert-success dialog-box text-center"></div>
+		<div class="alert alert-warning dialog-box text-center"></div>
+		<div class="alert alert-danger dialog-box text-center"></div>
+		<div class="header-container container-fluid">
+			<header class="container-fluid row">
+				<div class="container slider-button-container col-1">
+					<div class="container slider-button header-item">
+						<img src="resources/side_bar_slider.png" alt="SLIDE" class="side-bar-slider">
+					</div>
+				</div>
+				<div class="container nav-container col-11">
+					<nav class="container row">
+						<div class="container col-11">
+							<ul class="nav">
+								<li class="nav-item top-nav-item header-item">
+									<a href="/products/factorymodal/" class="nav-link text-muted"><small>Overview</small></a>
+								</li>
+								<li class="nav-item top-nav-item top-nav-item-active header-item">
+									<a class="nav-link active"><small>Analytics</small></a>
+								</li>
+							</ul>
+						</div>
+						<div class="container header-item col-1">
+							<div class="d-inline-block m-2 float-right dropdown">
+								<i class="fa fa-chevron-circle-down text-primary d-block dropdown-toggle" data-toggle="dropdown" style="font-size: 170%;"></i>
+								<div class="dropdown-menu">
+									<a href="/products.html" class="dropdown-item text-medium text-low">Home</a>
+									<div class="dropdown-divider"></div>
+									<a class="dropdown-item text-medium text-low" id="nav-signout-icon">Sign Out</a>
+								</div>
+							</div>
+						</div>
+					</nav>
+				</div>
+			</header>
+		</div>
+		<div class="side-bar-container">
+			<ul class="nav flex-column">
+				<li class="nav-item side-nav-item">
+					<a href="analyticslayout.html" class="nav-link p-2">
+						<img src="resources/analytics_side_bar.png" class="opacity-5" alt="Analytics">
+					</a>
+				</li>
+				<li class="nav-item side-nav-item">
+					<a class="nav-link p-2 active side-nav-item-active">
+						<img src="resources/reports_side_bar.png" alt="Reports">
+					</a>
+				</li>
+				<li class="nav-item side-nav-item">
+					<a href="coststructure.html" class="nav-link p-2">
+						<img src="resources/cost_structure_side_bar.png" class="opacity-5" alt="Cost Structure">
+					</a>
+				</li>
+				<li class="nav-item side-nav-item">
+					<a href="masterplan.html" class="nav-link p-2">
+						<img src="resources/masterplan_side_bar.png" class="opacity-5" alt="Masterplan">
+					</a>
+				</li>
+			</ul>
+		</div>
+		<div class="main-container pt-0 pr-0">
+			<main>
+				<div class="container-fluid section bg-light pl-5 pr-0" id="section-1">
+					<div class="border-bottom p-4">
+						<div class="d-inline-block font-weight-bold h5 mr-5">
+							Reports
+						</div>
+						<div class="d-inline-block mx-2">
+							<select class="reference-period-select select-type-input bg-primary text-white text-medium p-1 px-2 rounded font-weight-light d-block">
+								<option value="0">Reference Period</option>
+							</select>
+						</div>
+						<div class="d-inline-block mx-2">
+							<select class="line-select select-type-input bg-primary text-white text-medium p-1 px-2 rounded font-weight-light d-block">
+								<option value="0">Line</option>
+							</select>
+						</div>
+					</div>
+					<div class="border-bottom py-1 px-4">
+						<ul class="nav nav-justified">
+							<li class="nav-item">
+								<a class="nav-link text-small text-muted font-weight-bold" href="/products/factorymodal/reportmachine.html">MACHINE</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link text-small text-muted font-weight-bold" href="/products/factorymodal/reportenergy.html">ENERGY</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link text-small text-muted font-weight-bold" href="/products/factorymodal/reportmaterial.html">MATERIAL</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link text-small text-muted font-weight-bold" href="/products/factorymodal/reportmanpower.html">MANPOWER</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link text-small text-muted font-weight-bold" href="/products/factorymodal/reportmaintaince.html">MAINTAINCE</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link text-small text-danger font-weight-bold" href="/products/factorymodal/reportvolume.html">VOLUME</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link text-small text-muted font-weight-bold" href="/products/factorymodal/reportfinance.html">FINANCE</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link text-small text-muted font-weight-bold" href="/products/factorymodal/settings.html">SETTINGS</a>
+							</li>
+						</ul>
+					</div>
+				</div>
+				<div class="container">
+					<div class="row my-4">
+						<div class="col-5">
+							<div class="card pb-5">
+								<div class="card-body pb-5">
+									<div class="container h5 text-dark text-center">
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="col-7">
+							<div class="row my-1">
+								<div class="col-6">
+									<div class="card bg-dark">
+										<div class="card-head mt-1">
+											<div class="container text-white text-small">Volume Needed</div>
+										</div>
+										<div class="card-body pb-4">
+											<div class="material-efficiency-current-value">
+												<input type="number" class="volume-needed-input text-center text-white font-weight-light input-border bg-dark w-100" placeholder="Lbs">
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="col-6">
+									<div class="card bg-dark">
+										<div class="card-head mt-1">
+											<div class="container text-white text-small">Total Contribution Margin</div>
+										</div>
+										<div class="card-body pb-4">
+											<div class="material-efficiency-current-value">
+												<input type="number" class="volume-needed-input text-center text-white font-weight-light input-border bg-dark w-100" placeholder="kUSD/Lbs">
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="my-4">
+								<div class="card pb-5">
+									<div class="card-body pb-5">
+										<div class="container h5 text-dark text-center">
+											<strong>
+												Reference and Vision Comparison<span class="pareto-option pareto-option-1" style="border-bottom: 3px solid #50e3c2; margin-left: 20px;">(H Mac)</span>
+											</strong>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</main>
+		</div>
+	</div>
+</body></html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

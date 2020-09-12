@@ -1,0 +1,148 @@
+<!DOCTYPE html><html lang="en-US" dir="ltr"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" /><title>NLYZE | Breakdown</title><meta name="description" content="" /><meta name="owner" content="Nakul Malhotra"><meta name="author" content="Chaitanya Bhardwaj" /><base href="test.html" target="_self" /><meta name="referrer" content="origin-when-cross-origin" /><link rel="icon" type="image/x-icon">
+
+
+<link rel="stylesheet" href="../bower_components/bootstrap/dist/css/bootstrap.min.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" type="text/css" href="css/index-large.css">
+<script src="js/jquery-3.2.1.min.js"></script>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+<script href="../bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+
+
+
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-functions.js"></script>
+
+<script>
+	var config = {
+		apiKey: "AIzaSyCXWIr6ctkGUGYRvXsYgFG-NnCk6VRW_7Q",
+		authDomain: "nlyze-1.firebaseapp.com",
+		databaseURL: "https://nlyze-1.firebaseio.com",
+		projectId: "nlyze-1",
+		storageBucket: "nlyze-1.appspot.com",
+		messagingSenderId: "285435874741"
+	};
+	firebase.initializeApp(config);
+</script>
+
+</head><body onload="getData();">
+	<div class="outer-wrapper container-fluid"></div>
+	<div class="outer-container">
+
+		<div class="header-container container-fluid">
+			<header class="container-fluid row">
+				<div class="container nav-container col-11">
+					<nav class="container row">
+						<div class="container col-11">
+							<ul class="nav">
+								<li class="nav-item top-nav-item top-nav-item-active header-item">
+									<a class="nav-link active"><small>Data Log</small></a>
+								</li>
+								<li class="nav-item top-nav-item header-item">
+									<a href="reports.html" class="nav-link text-muted"><small>Analytics</small></a>
+								</li>
+                <li class="nav-item top-nav-item header-item">
+									<a href="workforce.html" class="nav-link text-muted"><small>Workforce</small></a>
+								</li>
+                <li class="nav-item top-nav-item header-item">
+									<a href="recorder.html" class="nav-link text-muted"><small>Breakdown</small></a>
+								</li>
+                <li class="nav-item top-nav-item header-item">
+									<a href="shiftTimes.html" class="nav-link text-muted"><small>Shift Times</small></a>
+								</li>
+              
+							</ul>
+						</div>
+						<div class="container header-item col-1">
+							<a href="#" class="btn btn-primary px-3 py-1 text-small mt-2">Home</a>
+						</div>
+					</nav>
+				</div>
+			</header>
+		</div>
+
+		<div class="main-container">
+			<main class="container clearfix" style="max-width: 1200px; margin-right: 0px; margin-left: 35px;">
+				<div class="section" id="section-1">
+					<div class="container">
+						<div class="text-low d-inline-block font-weight-bold">
+							 Data View
+						</div>
+					</div>
+					<div class="card section-1-card">
+						<div class="card-body">
+						<!--	<div class="row">
+								<div class="col-6">
+									<div class="file-type-container row bg-light">
+										<div class="col-4 text-muted text-small">Sort By</div>
+										<div class="col-8">
+											<select id="file-type" class="file-type-input text-small d-block bg-white rounded w-100">
+												<option value="LINE">Line</option>
+												<option value="DTS">Down Time Start</option>
+												<option value="DTE">Down Time End</option>
+												<option value="RS">Repair Start</option>
+												<option value="RE">Repair Ended</option>
+											</select>
+										</div>
+									</div>
+								</div>
+								<div class="col-6">
+									<div class="file-type-container row bg-light">
+										<div class="col-4 text-muted text-small">Time Period</div>
+										<div class="col-8">
+											<select id="reference-period" class="file-type-input text-small d-block bg-white rounded w-100">
+												<option value="0">Reference Period</option>
+											</select>
+										</div>
+									</div>
+								</div>
+							</div> -->
+							<div class="row">
+								<div class="col-12">
+									<div class="container border rounded my-3 p-3 scroll">
+										<div>
+											<table id = 'dataTable' class="table responsive">
+										    <thead contenteditable="false">
+										      <tr>
+										        <th>Line</th>
+										        <th>Down Time Start</th>
+										        <th>Repair Start</th>
+										        <th>Repair End</th>
+														<th>Down Time End</th>
+										        <th>Operator Id</th>
+														<th>Repair ID</th>
+														<th>Repair ID</th>
+														<th>Operator ID</th>
+														<th>Repair Comment</th>
+														<th>Operator Comment</th>
+
+										      </tr>
+										    </thead>
+
+										    <tbody contenteditable="true">
+
+										    </tbody>
+										  </table>
+										</div>
+									</div>
+								</div>
+
+							</div>
+						</div>
+					</div>
+
+				</div>
+			</main>
+		</div>
+	</div>
+</body>
+
+
+<script src="./js/table.js"></script>
+
+
+
+</html>

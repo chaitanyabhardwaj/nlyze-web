@@ -21,7 +21,7 @@
 <script src="https://www.gstatic.com/firebasejs/4.12.0/firebase.js"></script>
 <script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-firestore.js"></script>
 <script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-functions.js"></script>
-<script src="/scripts/main.js"></script>
+<script src="scripts/main.js"></script>
 <script src="/scripts/productchecker.js"></script>
 <script src="/scripts/inspector.js"></script>
 <script>
@@ -45,8 +45,11 @@
 				}
 				else {
 					//Product not authorized
+					window.location.replace('/');
 				}
 			}
+			else 
+				window.location.replace('/');
 		}).catch(function(error) {
 			console.log(error);
 		});

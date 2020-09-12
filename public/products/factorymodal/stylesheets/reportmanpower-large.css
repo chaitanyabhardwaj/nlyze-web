@@ -1,0 +1,20 @@
+@import url('https://fonts.googleapis.com/css?family=Roboto:300');
+.reference-period-select { min-width: 150px; }
+.line-select { min-width: 60px; }
+.family-select { min-width: 150px; background-color: #d8d5cf; }
+.reference-period-select, .line-select { background: url(dropdownicon_white.png) 95% / 15px no-repeat #fff; border: none; }
+.main-container { background-color: #eceff4 }
+.card { min-height: 100px; }
+.card-h-2 { min-height: 220px; }
+.card-body { position: relative; font-family: 'Roboto', sans-serif; }
+.representing-arrow img { width: 10px; height: auto; position: absolute; top: 37%; left: 29%; }
+.graph-canvas { position: absolute; bottom: 5px; }
+.graphic-representation-unit { border-bottom: 3px solid #50e3c2; }
+.graphic-representation-text { position: absolute; max-width: 25%; }
+.graphic-representation-manpower-hours { bottom: 33%; left: 35%; }
+.graphic-representation-fam-mac { top: 25%; left: 35%; }
+.graphic-representation-fam-ovm { top: 45%; right: 31%; }
+.graphic-representation-theoretical-time { border: 1px solid #6FF5C1; bottom: 50%; left: 1% }
+.graphic-representation-opening-time { border: 1px solid #FBAFAE; top: 10%; left: 1%; }
+.graphic-representation-working-hours { border: 1px solid #FBAFAE; top: 10%; right: 1%; }
+.dropdown-toggle::after { display: none; }

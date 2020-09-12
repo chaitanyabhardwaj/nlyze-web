@@ -4,33 +4,30 @@
 	DESCRIPTION
 	OWNER
 	FAVICON
-
-	CONVERT HTML TO JSP
  -->
- <!--
- 	.container - block divs
- 	.inner-container - inline-block divs
- 	Every section of the page contains 'title' and/or 'content', enclosed within that section's container
- -->
-<!DOCTYPE html><html lang="en-US" dir="ltr"><head><meta charset="utf-8"><title>Nlyze Console</title><meta name="description" content="" ><meta name="owner" content=""><meta name="author" content="Chaitanya Bhardwaj" ><base href="nlyze_user_auth.html" target="_self" ><meta name="referrer" content="origin-when-cross-origin" ><link rel="icon" type="image/x-icon" href="/resources/favicon_title.png">
-<link rel="stylesheet" type="text/css" href="stylesheets/basicstyle.css" />
-<link rel="stylesheet" type="text/css" media="screen and (min-width: 1001px)" href="stylesheets/console-large.css" />
+<!DOCTYPE html><html lang="en-US" dir="ltr"><head><meta charset="utf-8"><title>Nlyze Console</title><meta name="description" content="" ><meta name="owner" content=""><meta name="author" content="Chaitanya Bhardwaj" ><base href="nlyze_user_auth.html" target="_self" ><meta name="referrer" content="origin-when-cross-origin" ><link rel="icon" type="image/x-icon" href="/resources/favicon_title.png"><meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<link rel="stylesheet" type="text/css" href="lib/bootstrap-4/css/bootstrap.min.css">
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" type="text/css" href="stylesheets/index-large-factorymodel.css">
 <link rel="stylesheet" type="text/css" href="stylesheets/nlyze_user_large.css">
-<meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<script src="/scripts/jquery-3.2.1.min.js"></script>
+<link rel="stylesheet" type="text/css" href="/scripts/jquery-ui-1.12.1.custom/jquery-ui.min.css">
+<script src="scripts/jquery-3.2.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+<script src="lib/bootstrap-4/js/bootstrap.min.js"></script>
+<script src="/scripts/jquery-ui-1.12.1.custom/jquery-ui.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/4.12.0/firebase.js"></script>
 <script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-firestore.js"></script>
 <script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-functions.js"></script>
 <script src="/scripts/main.js"></script>
 <script src="/scripts/inspector.js"></script>
 <script>
+
 	'use strict';
 	//Initialize Auth
 	function Auth(user) {
 		const inst = this;
 		//authenticate admin
 		this.userRef = user;
-		this.authAdmin();
 		this.db = firebase.firestore();
 		//shortcuts to dom elements
 		this.outerWrapper = $('#outer-wrapper');
@@ -63,7 +60,6 @@
 			inst.fillUserValues($(this));
 		});
 		$('#disable-user-confirm').click(function() {
-			$('.loader').css('display', 'block');
 			inst.disableUser();
 		});
 		$('#close-disable-user, #disable-user-cancel').click(function() {
@@ -74,49 +70,10 @@
 			inst.fillUserValues($(this));
 		})
 		$('#enable-user-confirm').click(function() {
-			$('.loader').css('display', 'block');
 			inst.enableUser();
 		});
 		$('#close-enable-user, #enable-user-cancel').click(function() {
 			inst.hide($('#enable-user-dialog'));
-		});
-	};
-
-	Auth.prototype.authAdmin = function() {
-		const inst = this;
-		const authResult = firebase.functions().httpsCallable('authAdmin');
-		authResult().then(result => {
-			if(result.data) {
-				inst.initLayout();
-				$('.loader').css('display', 'none');
-			}
-			else {
-				window.location.replace('/');
-			}
-		}).catch(err => {
-			console.log(err);
-		});
-	};
-
-	Auth.prototype.initLayout = function() {
-		//Clear all fields & data
-		$('#user-auth-table').find('tr.data-row').remove();
-		//reterive user data
-		var settingsBttn;
-		return this.db.collection('users').get().then(querySnapshot => {
-			querySnapshot.forEach(doc => {
-				if(doc.data().account_type === 'admin-type') {
-					settingsBttn = '<button type="button" class="enable-user-button" data-id="' + doc.id + '">ENABLE</button>';
-					if(doc.data().active) {
-						settingsBttn = '<button type="button" class="disable-user-button" data-id="' + doc.id + '">DISABLE</button>';
-					}
-					$("<tr class='data-row'>").appendTo("table#user-auth-table")
-						.append($("<td class='td-email'>").text(doc.data().user_email))
-						.append($("<td class='td-phone'>").text('+' + doc.data().countryCode + ' ' + doc.data().phone))
-						.append($("<td class='td-uid'>").text(doc.id))
-						.append($("<td class='td-settings'>").html(settingsBttn));
-				}
-			});
 		});
 	};
 
@@ -128,6 +85,28 @@
 	Auth.prototype.hide = function(elementRef) {
 		elementRef.fadeOut(300);
 		this.outerWrapper.hide();
+	};
+
+	Auth.prototype.initLayout = function() {
+		//Clear all fields & data
+		$('tr.data-row').remove();
+		//reterive user data
+		var settingsBttn;
+		return this.db.collection('users').get().then(querySnapshot => {
+			querySnapshot.forEach(doc => {
+				if(doc.data().account_type === 'admin-type') {
+					settingsBttn = '<div class="dropdown"><i class="fa fa-pencil text-low dropdown-toggle" data-toggle="dropdown"></i><div class="dropdown-menu"><a class="enable-user-button dropdown-item text-medium text-muted" data-id="' + doc.id + '">Enable</a><div class="dropdown-divider"></div><a class="dropdown-item text-medium text-muted user-product-button" data-id="' + doc.id + '">Products</a></div></div>';
+					if(doc.data().active) {
+						settingsBttn = '<div class="dropdown"><i class="fa fa-pencil text-low dropdown-toggle" data-toggle="dropdown"></i><div class="dropdown-menu"><a class="disable-user-button dropdown-item text-medium text-muted" data-id="' + doc.id + '">Disable</a><div class="dropdown-divider"></div><a class="dropdown-item text-medium text-muted user-product-button" data-id="' + doc.id + '">Products</a></div></div>';
+					}
+					$("<tr class='data-row'>").appendTo(".user-append-to")
+						.append($("<td class='td-email text-medium text-low font-weight-light py-2'>").text(doc.data().user_email))
+						.append($("<td class='td-phone text-medium text-low font-weight-light py-2'>").text('+' + doc.data().countryCode + ' ' + doc.data().phone))
+						.append($("<td class='td-uid text-medium text-low font-weight-light py-2'>").text(doc.id))
+						.append($("<td class='td-settings text-medium py-2'>").html(settingsBttn));
+				}
+			});
+		});
 	};
 
 	Auth.prototype.createNewUser = function() {
@@ -147,17 +126,18 @@
 				$('.loader').css('display', 'none');
 				if(result.data) {
 					inst.initLayout();
-					displayError('USER ADDED');
+					displayDialog('USER ADDED','success');
+					inst.hide($('#add-user-container'));
 				}
 				else {
-					displayError('AN ERROR OUCCURRED');
+					displayDialog('AN ERROR OUCCURRED','danger');
 				}
 			}).catch(err => {
 				console.log(err);
 			});
 		}
 		else {
-			displayError(validate.text);
+			displayDialog(validate.text, 'warning');
 		}
 	};
 
@@ -169,11 +149,11 @@
 		}).then(result => {
 			if(result.data) {
 				inst.initLayout();
-				$('.loader').css('display', 'none');
-				displayError('USER DISABLED SUCCESSFULLY');
+				displayDialog('USER DISABLED SUCCESSFULLY','success');
+				inst.hide($('#disable-user-dialog'));
 			}
 			else {
-				displayError('AN ERROR OUCCURRED');
+				displayDialog('AN ERROR OUCCURRED','danger');
 			}
 		}).catch(err => {
 			console.log(err);
@@ -188,11 +168,11 @@
 		}).then(result => {
 			if(result.data) {
 				inst.initLayout();
-				$('.loader').css('display', 'none');
-				displayError('USER ENABLED SUCCESSFULLY');
+				displayDialog('USER ENABLED SUCCESSFULLY','success');
+				inst.hide($('#enable-user-dialog'));
 			}
 			else {
-				displayError('AN ERROR OUCCURRED');
+				displayDialog('AN ERROR OUCCURRED','danger');
 			}
 		}).catch(err => {
 			console.log(err);
@@ -267,23 +247,373 @@
 		return message;
 	};
 
-	//FUCNTION TO DISPLAY TEXT FLOATING AT THE TOP
-	function displayError(msg) {
+</script>
+<script>
+
+	'use strict';
+	//Initialize Product
+	function Product(user) {
+		const inst = this;
+		//authenticate admin
+		this.userRef = user;
+		this.db = firebase.firestore();
+		this.globalProductsList = [];
+    	//fetch the global product collection
+    	this.fetchGlobalProducts();
+		//shortcuts to dom elements
+		this.outerWrapper = $('#outer-wrapper');
+		//add event listeners
+		$('.component-table').on('click', '.user-product-button', function() {
+			console.log('heya');
+			inst.uid = $(this).attr('data-id');
+			inst.show($('#user-product-container'));
+			inst.fillAddProductValues();
+			inst.fillEditProductValues();
+		});
+		$('#close-user-product').click(function() {
+			inst.hide($('#user-product-container'));
+		});
+		$('#edit-product-select').change(function() {
+			const editProductSelect = $('#edit-product-select').find(':selected');
+			if(editProductSelect.val() !== 'Select Product') {
+				//update val
+				inst.updateEditProductValues();
+			}
+			else {
+				//clear updated values
+				$('#edit-product-date').val(null);
+				$('#edit-product-active').prop('checked', false);
+			}
+		});
+		$('#create-product-button').click(function() {
+			inst.fetchAddProductValues();
+			inst.addProductInUser();
+		});
+		$('#change-product-button').click(function() {
+			inst.fetchEditProductValues();
+			inst.editProductInUser();
+		});
+		//Instantiate datepicker
+		$('#add-product-date, #edit-product-date').datepicker({
+   			changeMonth : true,
+    		changeYear : true,
+    		showWeek : true,
+    		dateFormat : 'mm/dd/yy',
+    		firstDay : 1,
+    		yearRange: '+nn:+10'
+    	});
+	};
+
+	Product.prototype.fetchGlobalProducts = function() {
+		const inst = this;
+		var i = 0;
+		this.db.collection('products').get().then(querySnapshot => {
+			querySnapshot.forEach(doc => {
+				inst.globalProductsList[i++] = doc;
+			});
+		}).catch(err => {
+			//handle errors
+		});
+	}
+
+	Product.prototype.show = function(elementRef) {
+		this.outerWrapper.show();
+		elementRef.fadeIn(300);
+	};
+
+	Product.prototype.hide = function(elementRef) {
+		elementRef.fadeOut(300);
+		this.outerWrapper.hide();
+	};
+
+	Product.prototype.addProductInUser = function() {
+		const inst = this;
+		const validate = this.validateAddProduct();
+		if(validate.status) {
+			const productRef = this.db.doc('users/' + this.uid + '/products/' + this.addProductIdValue);
+			const currentTimeStamp = new Date().getTime();
+			const addProductDateStamp = new Date(inst.addProductDateValue).getTime();
+			//call cloud function to add product
+			const addProductFunction = firebase.functions().httpsCallable('addProduct');
+			addProductFunction({
+				userId : inst.uid,
+				productId : inst.addProductIdValue,
+				endStamp : new Date(inst.addProductDateValue).getTime()
+			}).then(result => {
+				if(result.data) {
+					inst.hide($('#user-product-container'));
+					displayDialog('Product Added Successfully.','success');
+				}
+				else {
+					displayDialog('An error occurred','danger')
+				}
+			}).catch(err => {
+				console.log(err);
+			});
+		}/*
+			productRef.get().then(doc => {
+				if(doc.exists) {
+					if(doc.data().active) {
+						console.log('Product already present');
+					}
+					else if(currentTimeStamp < addProductDateStamp){
+						productRef.update({
+							active : 1,
+							endStamp : addProductDateStamp,
+							emailSent : false,
+							smsSent : false
+						}).then(() => {
+							displayError('PRODUCT ACTIVATED');
+						}).catch(err => {
+							console.log(err);
+						});
+					}
+					else {
+						displayError('INVALID DATE');
+					}
+				}
+				else {
+					productRef.set({
+						name : inst.addProdctNameValue,
+						active : 1,
+						startStamp : new Date().getTime(),
+						endStamp : new Date(inst.addProductDateValue).getTime(),
+						emailSent : false,
+						smsSent : false
+					}).then(() => {
+						displayError('PRODUCT ADDED');
+					}).catch(error => {
+						console.log(error);
+					});
+				}
+			});
+		}
+		else {
+			displayError(validate.text);
+		}*/
+	};
+
+	Product.prototype.editProductInUser = function() {
+		const inst = this;
+		const validate = this.validateEditProduct();
+		if(validate.status) {
+			const productRef = this.db.doc('users/' + this.uid + '/products/' + this.editProductIdValue);
+			const currentTimeStamp = new Date().getTime();
+			const editProductDateStamp = new Date(this.editProductDateValue).getTime();
+			if(currentTimeStamp < editProductDateStamp) {
+				var activeVal = (this.editProductActive)? 1 : 0;
+				productRef.update({
+					active : activeVal,
+					endStamp : new Date(inst.editProductDateValue).getTime(),
+					emailSent : false,
+					smsSent : false
+				}).then(() => {
+					displayError('PRODUCT UPDATED');
+				}).catch(err => {
+					console.log(err);
+				});
+			}
+			else {
+				displayError('INVALID DATE');
+			}
+		}
+		else {
+			displayError(validate.text);
+		}
+	}
+
+	Product.prototype.fillAddProductValues = function() {
+		const inst = this;
+		var flag, i = 0, j;
+		const userProductList = [];
+		//clear old values
+		$('#add-product-select').find('option.data-option').remove();
+		return this.db.collection('users/' + this.uid + '/products').get().then(querySnapshot => {
+			if(querySnapshot.empty) {
+				inst.fillAllAddProductValues();
+			}
+			else {
+				querySnapshot.forEach(doc => {
+					userProductList[i++] = doc;
+				});
+				for(i = 0; i < inst.globalProductsList.length; i++) {
+					flag = 1;
+					for(j = 0; j < userProductList.length; j++) {
+						if(inst.globalProductsList[i].id === userProductList[j].id) {
+							console.log('is equal ' + inst.globalProductsList[i].id);
+							flag = 0;
+							break;
+						}
+					}
+					if(flag) {
+						//display product
+						console.log('globalProductsList - ' + inst.globalProductsList[i].id + ' : user product - ' + userProductList[j]);
+						$("<option data-id='" + inst.globalProductsList[i].id + "' class='data-option product-option'>").appendTo('#add-product-select').text(inst.globalProductsList[i].data().name);
+					}
+				}
+			}
+		});
+	};
+
+	Product.prototype.fillEditProductValues = function() {
+		//clear old values
+		$('#edit-product-select').find('option.data-option').remove();
+		this.db.collection('users/' + this.uid + '/products').get().then(querySnapshot => {
+			querySnapshot.forEach(doc => {
+				if(doc.data().active) {
+					$("<option data-id='" + doc.id + "' class='data-option product-option'>").appendTo('#edit-product-select').text(doc.data().name);
+				}
+				else {
+					$("<option data-id='" + doc.id + "' class='data-option product-expired product-option'>").appendTo('#edit-product-select').text(doc.data().name);
+				}
+			});
+		});
+	};
+
+	Product.prototype.fillAllAddProductValues = function() {
+		//clear old values
+		$('#add-product-select').find('option.data-option').remove();
+		$.each(this.globalProductsList, (i, product) => {
+			$("<option data-id='" + product.id + "' class='data-option product-option'>").appendTo('#add-product-select').text(product.data().name);
+		});
+	};
+
+	Product.prototype.updateEditProductValues = function() {
+		const inst = this;
+		const selectedProductId = $('#edit-product-select').find(':selected').attr('data-id');
+		this.db.doc('users/' + this.uid + '/products/' + selectedProductId).get().then(doc => {
+			if(doc.exists) {
+				if(doc.data().active) {
+					$('#edit-product-active').prop('checked', true);
+				}
+				else {
+					$('#edit-product-active').prop('checked', false);
+				}
+				const lastDate = new Date(doc.data().endStamp);
+				const dateStr =  (lastDate.getMonth() + 1) + '/' + lastDate.getDate() + '/' + lastDate.getFullYear();
+				$('#edit-product-date').val(dateStr);
+			}
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	Product.prototype.fetchAddProductValues = function() {
+		this.addProdctNameValue = $('#add-product-select').find(':selected').val();
+		this.addProductIdValue = $('#add-product-select').find(':selected').attr('data-id');
+		this.addProductDateValue = $('#add-product-date').val();
+	};
+
+	Product.prototype.fetchEditProductValues = function() {
+		this.editProductIdValue = $('#edit-product-select').find(':selected').attr('data-id');
+		this.editProductDateValue = $('#edit-product-date').val();
+		this.editProductActive = $('#edit-product-active').is(':checked');
+	};
+
+	Product.prototype.validateAddProduct = function() {
+		var message;
+		if(this.addProductNameValue === 'Select Product' || this.addProductIdValue === '' || this.addProductDateValue === '') {
+			message = {
+				status : 0,
+				text : 'PLEASE FILL IN ALL THE FIELDS'
+			};
+			return message;
+		}
+		message = {
+			status : 1,
+			text : 'RESULT_OK'
+		};
+		return message;
+	};
+
+	Product.prototype.validateEditProduct = function() {
+		var message;
+		if(this.editProductNameValue === 'Select Product' || this.editProductIdValue === '' || this.editProductDateValue === '') {
+			message = {
+				status : 0,
+				text : 'PLEASE FILL IN ALL THE FIELDS'
+			};
+			return message;
+		}
+		message = {
+			status : 1,
+			text : 'RESULT_OK'
+		};
+		return message;
+	};
+
+</script>
+
+<script>
+
+	//Initializing ConsoleOverview
+	function ConsoleOverview(user) {
+		const inst = this;
+		this.userRef = user;
+		//Authenticate User as admin
+		this.authAdmin();
+		this.db = firebase.firestore();
+	};
+
+	ConsoleOverview.prototype.authAdmin = function() {
+		const inst = this;
+		const authResult = firebase.functions().httpsCallable('authAdmin');
+		authResult().then(result => {
+			if(result.data) {
+				inst.initLayout();
+			}
+			else {
+				window.location.replace('/');
+			}
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	ConsoleOverview.prototype.initLayout = function() {
+		//Clear all fields & data
+		$('tr.data-row').remove();
+		//reterive user data
+		var settingsBttn;
+		return this.db.collection('users').get().then(querySnapshot => {
+			querySnapshot.forEach(doc => {
+				if(doc.data().account_type === 'admin-type') {
+					settingsBttn = '<div class="dropdown"><i class="fa fa-pencil text-low dropdown-toggle" data-toggle="dropdown"></i><div class="dropdown-menu"><a class="enable-user-button dropdown-item text-medium text-muted" data-id="' + doc.id + '">Enable</a><div class="dropdown-divider"></div><a class="dropdown-item text-medium text-muted user-product-button" data-id="' + doc.id + '">Products</a></div></div>';
+					if(doc.data().active) {
+						settingsBttn = '<div class="dropdown"><i class="fa fa-pencil text-low dropdown-toggle" data-toggle="dropdown"></i><div class="dropdown-menu"><a class="disable-user-button dropdown-item text-medium text-muted" data-id="' + doc.id + '">Disable</a><div class="dropdown-divider"></div><a class="dropdown-item text-medium text-muted user-product-button" data-id="' + doc.id + '">Products</a></div></div>';
+					}
+					$("<tr class='data-row'>").appendTo(".user-append-to")
+						.append($("<td class='td-email text-medium text-low font-weight-light py-2'>").text(doc.data().user_email))
+						.append($("<td class='td-phone text-medium text-low font-weight-light py-2'>").text('+' + doc.data().countryCode + ' ' + doc.data().phone))
+						.append($("<td class='td-uid text-medium text-low font-weight-light py-2'>").text(doc.id))
+						.append($("<td class='td-settings text-medium py-2'>").html(settingsBttn));
+				}
+			});
+		});
+	};
+
+	//FUCNTION TO DISPLAY TEXT DIALOG AT THE TOP
+	function displayDialog(msg, dialogType) {
 		$('html, body').scrollTop(0);
-		$('#error-container').html(msg);
-		$('#error-container').fadeIn();
+		var dialogBox = $('.alert-' + dialogType);
+		if(dialogBox.length === 0) //dialogBox with class 'dialogType' does not exists
+			dialogBox =$('.alert-warning');
+		dialogBox.html(msg);
+		dialogBox.fadeIn();
 		var timer = setInterval(function() {
-			$('#error-container').fadeOut();
+			dialogBox.fadeOut();
 			clearInterval(timer);
 		}, 4000);
 	};
-
+	
 	$(document).ready(function() {
 		//Get user
 		firebase.auth().onAuthStateChanged(function(user) {
 			if(user) {
 				//User is signed in
 				const auth = new Auth(user);
+				const product = new Product(user);
+				const consoleOverview = new ConsoleOverview(user);
 			}
 			else {
 				//User is not signed in
@@ -293,26 +623,27 @@
 	});
 
 </script>
+
 </head><body>
 	<div id="outer-wrapper"></div>
-	<div id="add-user-container" class="container floating-container">
+	<div id="add-user-container" class="floating-container">
 		<div class="floating-container-bar">
 			ADD USER
-			<div id="close-add-user" class='floating-close-container' class="inner-container">
+			<div id="close-add-user" class='floating-close-container d-inline-block'>
 				<img src="/resources/white_cross.png" alt="Close" class="floating-close">
 			</div>
 			<div class="clearfix"></div>
 		</div>
 		<div class="container">
-			<div class="container form-container">
-				<div class="inner-container input-container">
+			<div class="form-container">
+				<div class="inner-input-container">
 					<input type="text" id="add-user-fname" placeholder="Name">
 				</div>
-				<div class="inner-container input-container">
+				<div class="inner-input-container">
 					<input type="email" id="add-user-uname" placeholder="Email">
 				</div>
 				<div class="container"><!--Div Block--></div>
-				<div class="inner-container input-container">
+				<div class="inner-input-container">
 					<select id="add-country-code">
 						<option value="0" selected>Country Code</option>
 						<option data-countryCode="US" value="1">USA (+1)</option>
@@ -531,220 +862,236 @@
 					  	<option data-countryCode="ZW" value="263">Zimbabwe (+263)</option>
 					</select>
 				</div>
-				<div class="inner-container input-container">
+				<div class="inner-input-container">
 					<input type="number" id="add-user-phone" placeholder="Mobile No. ">
 				</div>
-				<div class="inner-container input-container">
+				<div class="inner-input-container">
 					<input type="password" id="add-user-passwd" placeholder="Password">
 				</div>
 				<div class="container"><!--Div Block--></div>
-				<div class="inner-container">
+				<div class="d-inline-block">
 					Type Of Account :
 				</div>
-				<div class="inner-container">
-					<div class="inner-container">
+				<div class="d-inline-block">
+					<div class="d-inline-block">
 						<input type="radio" name="user-type" class="user-type" value="admin-type" checked>Admin
 					</div>
-					<div class="inner-container">
+					<div class="d-inline-block">
 						<input type="radio" name="user-type"  class="user-type" value="user-type">User
 					</div>
 				</div>
 				<div class="container" id="link-account-container">
-					<div class="inner-container">
+					<div class="d-inline-block">
 						Link this account to :
 					</div>
-					<div class="inner-container input-container">
+					<div class="inner-input-container d-inline-block">
 						<input type="email" id="linked-email" placeholder="Email Address?">
 					</div>
 				</div>
 				<div class="container">
-					<button type="button" id="create-user-button">CREATE USER</button>
+					<button type="button" class="btn btn-primary" id="create-user-button">CREATE USER</button>
 				</div>
 			</div>
 		</div>
 	</div>
-	<div id="disable-user-dialog" class="container floating-container">
+	<div id="disable-user-dialog" class="floating-container">
 		<div class="floating-container-bar">
 			DISABLE USER
-			<div id="close-disable-user" class='floating-close-container' class="inner-container">
+			<div id="close-disable-user" class='floating-close-container d-inline-block'>
 				<img src="/resources/white_cross.png" alt="Close" class="floating-close">
 			</div>
 			<div class="clearfix"></div>
 		</div>
-		<div class="container form-container">
+		<div class="form-container">
 			<div class="container">
-				<div class="floating-dialog container">
+				<div class="floating-dialog container text-medium text-low">
 					<b>USERS WITH DISABLED ACCOUNTS AREN'T ABLE TO SIGN IN</b>
 				</div>
-				<div class="container">
+				<div class="container text-low">
 					User Account:
-					<div class="container auth-user-email"></div>
+					<div class="auth-user-email d-inline-block"></div>
 				</div>
 			</div>
 			<div class="container">
-				<div class="inner-container">
-					<button type="button" id="disable-user-cancel">CANCEL</button>
+				<div class="d-inline-block">
+					<button type="button" class="btn btn-secondary" id="disable-user-cancel">CANCEL</button>
 				</div>
-				<div class="inner-container">
-					<button type="button" id="disable-user-confirm">DISABLE</button>
+				<div class="d-inline-block">
+					<button type="button" class="btn btn-danger" id="disable-user-confirm">DISABLE</button>
 				</div>
 			</div>
 		</div>
 	</div>
-	<div id="enable-user-dialog" class="container floating-container">
+	<div id="enable-user-dialog" class="floating-container">
 		<div class="floating-container-bar">
 			ENABLE USER
-			<div id="close-enable-user" class='floating-close-container' class="inner-container">
+			<div id="close-enable-user" class='floating-close-container d-inline-block'>
 				<img src="/resources/white_cross.png" alt="Close" class="floating-close">
 			</div>
 			<div class="clearfix"></div>
 		</div>
-		<div class="container form-container">
+		<div class="form-container">
 			<div class="container">
-				<div class="floating-dialog container">
+				<div class="floating-dialog container text-medium text-low">
 					<b>USERS WITH ENABLED ACCOUNTS ARE ABLE TO SIGN IN</b>
 				</div>
-				<div class="container">
+				<div class="container text-low">
 					User Account:
-					<div class="container auth-user-email"></div>
+					<div class="auth-user-email d-inline-block"></div>
 				</div>
 			</div>
 			<div class="container">
-				<div class="inner-container">
-					<button type="button" id="enable-user-cancel">CANCEL</button>
+				<div class="d-inline-block">
+					<button type="button" class="btn btn-secondary" id="enable-user-cancel">CANCEL</button>
 				</div>
-				<div class="inner-container">
-					<button type="button" id="enable-user-confirm">ENABLE</button>
+				<div class="d-inline-block">
+					<button type="button" class="btn btn-success" id="enable-user-confirm">ENABLE</button>
 				</div>
 			</div>
 		</div>
 	</div>
-	<div id="outer-container" class="container">
-		<div class="loader"></div>
-		<div id="error-container"></div>
-		<div id="header-container" class="container">
-			<header class="container">
-				<div id="header-content" class="container center">
-					<a href="index.html" target="_self">
-						<div class="favicon-container inner-container img-container">
-							<img src="/resources/favicon.png" alt="Nlyse" class="favicon-img">
+
+	<div id="user-product-container" class="floating-container">
+		<div class="floating-container-bar">
+			USER PRODUCTS
+			<div id="close-user-product" class='floating-close-container d-inline-block'>
+				<img src="/resources/white_cross.png" alt="Close" class="floating-close">
+			</div>
+			<div class="clearfix"></div>
+		</div>
+		<div class="d-inline-block w-50">
+			<div class="container form-container">
+				<div class="container input-container">
+					<select id="add-product-select">
+						<option>Select Product</option>
+						<!-- add products -->
+					</select>
+				</div>
+				<div class="container input-container">
+					<input type="text" id="add-product-date" placeholder="Active Till">
+				</div>
+				<div class="container">
+					<button type="button" class="btn btn-primary" id="create-product-button">ADD</button>
+				</div>
+			</div>
+		</div>
+		<div class="d-inline-block w-50 float-right">
+			<div class="container form-container">
+				<div class="container input-container">
+					<select id="edit-product-select">
+						<option>Select Product</option>
+					</select>
+				</div>
+				<div class="container input-container" id="product-active-status-container">
+					Active : <input type="checkbox" id="edit-product-active">
+				</div>
+				<div class="container input-container">
+					<input type="text" id="edit-product-date" placeholder="Active Till">
+				</div>
+				<div class="container">
+					<button type="button" class="btn btn-primary" id="change-product-button">CHANGE</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="outer-container">
+		<!--bootstrap modal starts -->
+		<div class="modal fade">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<div class="modal-title h4">
+							<!-- fill in the title -->
 						</div>
-					</a>
-					<div id="nav-container" class="inner-container">
-						<div id="nav-container-signin" class="inner-container">
-							<div id="nav-signin" class="container img-container nav-content">
-								<span id="user-display-name"><!-- Script --></span>
-								<img src="/resources/profile_placeholder.png" alt="User" class="profile-placeholder">
-							</div>
-							<div class="dropdown" id="nav-dropdown">
-								<div class="dropdown-attach"></div>
-								<ul class="dropdown-list">
-									<li><a href="/main_account.html"><img src="/resources/settings_icon.png">Account</a></li>
-									<li id="nav-signin-icon"><a href="/signin.html" target="_self"><img src="/resources/profile_placeholder_invert.png">Sign In</a></li>
-									<li id="nav-signout-icon"><img src="/resources/profile_placeholder_invert.png">Sign Out <span id="nav-signout-name"><!--Username--></span></li>
-									<!-- CHANGE SIGN IN TO 'SIGNOUT USERNAME', IF USER SIGNED IN -->
-								</ul>
-							</div>
-						</div>
+						<button type="button" class="close" data-dismiss="modal">&times;</button>
 					</div>
-					<div class="clearfix"></div>
+					<div class="modal-body">
+						<!-- fill in the body -->
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn basic-btn btn-light" data-dismiss="modal">Close</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!--bootstrap modal ends -->
+		<div class="alert alert-success dialog-box text-center"></div>
+		<div class="alert alert-warning dialog-box text-center"></div>
+		<div class="alert alert-danger dialog-box text-center"></div>
+		<div class="header-container container-fluid">
+			<header class="container-fluid row">
+				<div class="container slider-button-container col-1">
+					<div class="container slider-button header-item">
+						<img src="resources/side_bar_slider.png" alt="SLIDE" class="side-bar-slider">
+					</div>
+				</div>
+				<div class="container nav-container col-11">
+					<nav class="container row">
+						<div class="container col-11">
+							<ul class="nav">
+								<li class="nav-item top-nav-item top-nav-item-active header-item">
+									<a href="#" class="nav-link active"><small>Overview</small></a>
+								</li>
+								<li class="nav-item top-nav-item header-item">
+									<a href="#" class="nav-link text-muted"><small>Analytics</small></a>
+								</li>
+							</ul>
+						</div>
+						<div class="container header-item col-1">
+							<a href="#" class="btn btn-primary px-3 py-1 text-small mt-2">Home</a>
+						</div>
+					</nav>
 				</div>
 			</header>
 		</div>
-		<div id="main-container" class="container">
+		<div class="side-bar-container">
+			<ul class="nav flex-column">
+				<li class="nav-item side-nav-item side-nav-item-active">
+					<a href="#" class="nav-link active">
+						<i class="fa fa-user-circle-o" style="font-size: 22px;"></i>
+					</a>
+				</li>
+				<li class="nav-item side-nav-item">
+					<a href="#" class="nav-link">
+						<i class="fa fa-opencart text-muted" style="font-size: 22px;"></i>
+					</a>
+				</li>
+			</ul>
+		</div>
+		<div class="main-container bg-light">
 			<main class="container">
-				<div id="main-content" class="container">
-					<section id="section-0" class="inner-container">
-						<div id="section-0-content" class="container section-content">
-							<div id="section-0-heading-container" class="container">
-								<h1 class="container">Nlyze Console</h1>
+				<div class="container section my-4" id="section-1">
+					<div class="card">
+						<div class="card-header">
+							<div class="d-inline-block text-muted h5 font-weight-normal">
+								Nlyze Users
 							</div>
-							<div id="section-0-text-container" class="container">
-								<ul id="console-list">
-									<div class="console-list-item-container container">
-										<div class="container console-list-section">
-											<div class="console-dropdown-trigger container">Users</div>
-											<div class="console-dropdown container">
-												<div id="console-list-user-auth" class="console-list-item container">
-													<a href="/nlyze_user_auth.html">Auth</a>
-												</div>
-												<div id="console-list-user-product" class="console-list-item container">
-													<a href="/nlyze_user_product.html">Products</a>
-												</div>
-											</div>
-										</div>
-										<div id="console-list-product" class="console-list-item console-list-section container">
-											<a href='/nlyze_products.html'>Products</a>
-										</div>
-									</div>
-								</ul>
+							<div class="d-inline-block float-right">
+								<button type="button" id="add-user-button" class="btn btn-primary px-3 py-1 text-small d-block">Create User</button>
+							</div>
+							<div class="clearfix"></div>
+						</div>
+						<div class="card-body">
+							<div class="container table-container">
+								<table class="table table-stripped component-table">
+									<thead>
+										<tr>
+											<th class="text-low">Email</th>
+											<th class="text-low">Phone</th>
+											<th class="text-low">User Id</th>
+											<th class="text-low">Action</th>
+										</tr>
+									</thead>
+									<tbody class="user-append-to">
+										
+									</tbody>
+								</table>
 							</div>
 						</div>
-					</section>
-					<section id="section-1" class="container">
-						<div id="section-1-content" class="container section-content center">
-							<div id="section-1-heading-container" class="container">
-								<h1>Authentication</h1>
-							</div>
-							<div class="container">
-								<!-- Component Starts -->
-								<div id="component-container" class="container">
-									<div id="component-action-container" class="container">
-										<div class="component-action">
-											<button type="button" id="add-user-button">ADD USER</button>
-											<div class="clearfix"></div>
-										</div>
-									</div>
-									<div class="component-table-container" class="container">
-										<table class="component-table" id="user-auth-table">
-											<tr><th>EMAIL</th><th>PHONE</th><th>UID</th><th><!--Settings--></th></tr>
-											<!-- add user auth info -->
-										</table>
-									</div>
-									<div class="component-table-footer" class="container"></div>
-								</div>
-								<!-- Component Ends -->
-							</div>
-						</div>
-					</section>
-					<div class="clearfix"></div>
+					</div>
 				</div>
 			</main>
-		</div>
-		<div id="footer-container" class="container">
-			<footer class="container">
-				<div id="footer-content" class="container center">
-					<div id="aboutus-summary" class="inner-container">
-						<h4>About Us</h4>
-						<!-- Write About Us Summary Here -->
-					</div>
-					<div class="contactus-summary inner-container">
-						<h4>Contact Us</h4>
-						<div class="container contact-container">
-							<div class="inner-container img-container contact-icon">
-								<img src="/resources/phone_icon.png" alt="Phone : ">
-							</div>
-							519-757-2531
-						</div>
-						<div class="container contact-container">
-							<div class="inner-container img-container contact-icon">
-								<img src="/resources/mail_icon.png" alt="Email : ">
-							</div>
-							sunil@nlze.com
-						</div>
-						<div class="container contact-container">
-							<div class="inner-container img-container contact-icon">
-								<img src="/resources/home_icon.png" alt="Address : ">
-							</div>
-							43, Coxwell Cres<br>Brantford, ON, N3P1P5<br>Canada.
-						</div>
-					</div>
-					<div class="clearfix"></div>
-					<div id="copyright" class="container">
-						<!-- Copyright display -->
-					</div>
-				</div>
-			</footer>
 		</div>
 	</div>
 </body></html>

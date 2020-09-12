@@ -1,0 +1,1056 @@
+<!DOCTYPE html><html lang="en-US" dir="ltr"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" /><title>NLYZE | Factory Model</title><meta name="description" content="" /><meta name="owner" content="Nakul Malhotra"><meta name="author" content="Chaitanya Bhardwaj" /><base href="reportmanpower.html" target="_self" /><meta name="referrer" content="origin-when-cross-origin" /><link rel="icon" type="image/x-icon" href="/resources/favicon_title.png" /><meta name="robots" content="index, nofollow">
+<link rel="stylesheet" type="text/css" href="lib/bootstrap-4/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" type="text/css" href="stylesheets/index-large.css">
+<link rel="stylesheet" type="text/css" href="stylesheets/reportmanpower-large.css">
+<script src="scripts/jquery-3.2.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+<script src="lib/bootstrap-4/js/bootstrap.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-functions.js"></script>
+<script src="/scripts/main.js"></script>
+<script src="/scripts/productchecker.js"></script>
+<script src="/scripts/inspector.js"></script>
+<script src="scripts/Chart.bundle.min.js"></script>
+<script>
+	
+	'use strict';
+
+	//Initializing ReportManpower
+	function ReportManpower(user) {
+		const inst = this;
+		this.userRef = user;
+		//Initialize firestore
+		this.db = firebase.firestore();
+		//get DOM shortcuts
+		this.currentOLEDOM = $('.ole-current-value');
+		this.currentMIDOM = $('.mi-current-value');
+		this.visionOLEDOM = $('.ole-vision-value');
+		this.visionMIDOM = $('.mi-vision-value');
+		this.OLEChangeStrDOM = $('.ole-increase-str');
+		this.MIChangeStrDOM = $('.mi-increase-str');
+		this.OLEChangeValueDOM = $('.ole-increase-value');
+		this.MIChangeValueDOM = $('.mi-increase-value');
+		this.OLEArrow = $('.ole-arrow img');
+		this.MIArrow = $('.mi-arrow img');
+
+		this.referencePeriod = $('.reference-period-select');
+		this.line = $('.line-select');
+
+		this.graphicRepresentationUnit = $('.graphic-representation-unit');
+		this.graphicRepresentationManPowerHours = $('.graphic-representation-manpower-hours');
+		this.graphicRepresentationFamMac = $('.graphic-representation-fam-mac');
+		this.graphicRepresentationFamOvm = $('.graphic-representation-fam-ovm');
+		this.graphicRepresentationTheoreticalTime = $('.graphic-representation-theoretical-time');
+		this.graphicRepresentationOpeningTime = $('.graphic-representation-opening-time');
+		this.graphicRepresentationWorkingHours = $('.graphic-representation-working-hours');
+
+		this.referenceVisionUnit = 'LBS'; //default value [changable with 'kUSD']
+		this.referenceVisionUnitLbs = $('.reference-vision-toggle-lbs');
+		this.referenceVisionUnitKusd = $('.reference-vision-toggle-kusd');
+
+		this.paretoOption1 = $('.pareto-option-1');
+		this.paretoOption2 = $('.pareto-option-2');
+		this.paretoOption3 = $('.pareto-option-3');
+
+		//set event listeners
+		this.referencePeriod.change(function() {
+			inst.onComponentChanged();
+		});
+		this.line.change(function() {
+			inst.onComponentChanged();
+		});
+
+		this.graphicRepresentationUnit.click(function() {
+			if(inst.graphicRepresentationUnit === '(H Man)')
+				//change to kUSD
+				inst.graphicRepresentationUnit.text('(kUSD)');
+			else
+				//change to H Man
+				inst.graphicRepresentationUnit.text('(H Man)');
+			inst.initGraphicRepresentation();
+		});
+		this.graphicRepresentationUnitKusd.click(function() {
+			if(inst.graphicRepresentationUnit === '(kUSD)') {
+				//change to H Man
+				inst.graphicRepresentationUnit.text('(H Man)');
+				inst.initReferenceVisionGraph();
+			}
+		});
+
+		this.paretoOption1.click(function() {
+			if(inst.paretoOption1.text() === 'Losses' && inst.paretoOption2.text() === 'Family') {
+				inst.paretoOption1.text('Potentials');
+				inst.initParetoGraph(inst.getParetoDataSet());
+				return;
+			}
+			if(inst.paretoOption1.text() === 'Potentials' && inst.paretoOption2.text() === 'Family') {
+				inst.paretoOption1.text('Losses');
+				inst.initParetoGraph(inst.getParetoDataSet());
+				return;
+			}
+		});
+		this.paretoOption2.click(function() {
+			if(inst.paretoOption2.text() === 'Family' && inst.paretoOption1.text() === 'Potentials') {
+				inst.paretoOption2.text('Loss');
+				inst.initParetoGraph(inst.getParetoDataSet());
+				return;
+			}
+			if(inst.paretoOption2.text() === 'Loss') {
+				inst.paretoOption2.text('Family');
+				inst.initParetoGraph(inst.getParetoDataSet());
+				return;
+			}
+		});
+		this.paretoOption3.click(function() {
+			if(inst.paretoOption3.text() === '(H Man)')
+				inst.paretoOption3.text('(kUSD)');
+			else
+				inst.paretoOption3.text('(H Man)');
+			inst.initParetoGraph(inst.getParetoDataSet());
+		});
+
+		//Calling init functions
+		this.pullData();
+		this.initLayout();
+	};
+
+	ReportManpower.prototype.initLayout = function() {
+		//clear existing data
+		$('input').val('');
+		$('select').find('option.data-option').remove();
+		//fetch referencePeriod
+		this.initReferencePeriod();
+		//fetch line data
+		this.initLines();
+	};
+
+	ReportManpower.prototype.initGraphs = function() {
+		this.initReferenceVisionGraph();
+		this.initParetoGraph();
+	};
+
+	ReportManpower.prototype.pullData = function() {
+		this.pullFamilyData();
+		this.pullLossData();
+	};
+
+	ReportManpower.prototype.pullDataWithVersion = function() {
+		const inst = this;
+		const referencePeriodRef = this.db.doc('users/' + this.userRef.uid + '/products/np002/factoryFileTypes/material/referencePeriod/' + this.referencePeriodValue);
+		referencePeriodRef.get().then(doc => {
+			if(doc.exists) {
+				if(doc.data().initialWritten) {
+					if(doc.data().updatedWritten) {
+						//pull and store updated table data
+						inst.pullReferencePeriodData('updated');
+						inst.pullAfterVisionData('updated');
+						inst.pullLossesData('updated');
+					}
+					else {
+						//pull and store initial table data
+						inst.pullReferencePeriodData('initial');
+						inst.pullAfterVisionData('initial');
+						inst.pullLossesData('initial');
+					}
+				}
+				else {
+					displayDialog("Cannot find the Reference Period table. Upload Reference Period or contact support.", "danger");
+				}
+			}
+			else {
+				displayDialog("Cannot find the Reference Period table. Upload Reference Period or contact support.", "danger");
+			}
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	ReportManpower.prototype.initReferencePeriod = function() {
+		this.db.collection('users/' + this.userRef.uid + '/products/np002/factoryFileTypes/material/referencePeriod/').get().then(querySnapshot => {
+			querySnapshot.forEach(ref => {
+				$("<option class='data-option' value='" + ref.id + "'>").appendTo(".reference-period-select").text(ref.id);
+			});
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	ReportManpower.prototype.initLines = function() {
+
+	};
+
+	ReportManpower.prototype.pullReferencePeriodData = function(version) {
+		const inst = this;
+		this.refPArr = [];
+		var i = 0;
+		this.db.collection('users/' + this.userRef.uid + '/products/np002/factoryFileTypes/material/referencePeriod/' + this.referencePeriodValue + '/' + version + 'ReferencePeriod').orderBy('id').get().then(querySnapshot => {
+			querySnapshot.forEach(refP => {
+				inst.refPArr[i++] = refP.data();
+			});
+			//calculate OLE and MI, current and vision if refPArr and afterVisionArr is not null
+			if(inst.refPArr.length > 0 && inst.afterVisionArr.length > 0) {
+				const oleCurrent = inst.getOLECurrent();
+				const oleVision = inst.getOLEVision();
+				const miCurrent = inst.getMICurrent();
+				const miVision = inst.getMIVision();
+				inst.displayOLECurrent(oleCurrent);
+				inst.displayMICurrent(miCurrent);
+				inst.displayOLEVision(oleVision);
+				inst.displayMIVision(miVision);
+				inst.displayOLEChange(oleCurrent, oleVision);
+				inst.displayMIChange(miCurrent, miVision);
+			}
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	ReportManpower.prototype.pullAfterVisionData = function(version) {
+		const inst = this;
+		this.afterVisionArr = [];
+		var i = 0;
+		this.db.collection('users/' + this.userRef.uid + '/products/np002/factoryFileTypes/material/referencePeriod/' + this.referencePeriodValue + '/' + version + 'AfterVision').orderBy('id').get().then(querySnapshot => {
+			querySnapshot.forEach(vision => {
+				inst.afterVisionArr[i++] = vision.data();
+			});
+			//calculate OLE and MI, current and vision if refPArr and afterVisionArr is not null
+			if(inst.refPArr.length > 0 && inst.afterVisionArr.length > 0) {
+				const oleCurrent = inst.getOLECurrent();
+				const oleVision = inst.getOLEVision();
+				const miCurrent = inst.getMICurrent();
+				const miVision = inst.getMIVision();
+				inst.displayOLECurrent(oleCurrent);
+				inst.displayMICurrent(miCurrent);
+				inst.displayOLEVision(oleVision);
+				inst.displayMIVision(miVision);
+				inst.displayOLEChange(oleCurrent, oleVision);
+				inst.displayMIChange(miCurrent, miVision);
+			}
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	ReportManpower.prototype.pullLossesData = function(version) {
+		const inst = this;
+		this.lossesArr = [];
+		var i = 0, j = 0, k = 0;
+		this.db.collection('users/' + this.userRef.uid + '/products/np002/factoryFileTypes/material/referencePeriod/' + this.referencePeriodValue + '/' + version + 'FileObj').get().then(querySnapshot => {
+			querySnapshot.forEach(obj => {
+				if(obj.id !== 'headers') {
+					inst.lossesArr[i++] = obj.data();
+				}
+				else {
+					inst.lossesHeaderArr = obj.data();
+				}
+			});
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	ReportManpower.prototype.pullPotentialsData = function(version) {
+		const inst = this;
+		this.potentialsArr = [];
+		var i = 0;
+		this.db.collection('users/' + this.userRef.uid + '/products/np002/factoryFileTypes/material/referencePeriod/' + this.referencePeriodValue + '/' + version + 'PotentialObj').get().then(querySnapshot => {
+			querySnapshot.forEach(obj => {
+				if(obj.id !== 'headers') {
+					inst.potentialsArr[i++] = obj.data();
+				}
+				else {
+					inst.potentialsHeaderArr = obj.data();
+				}
+			});
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	ReportManpower.prototype.pullFamilyData = function() {
+		const inst = this;
+		this.famArr = [];
+		var i = 0;
+		this.db.collection('users/' + this.userRef.uid + '/products/np002/factoryFileTypes/material/family').get().then(querySnapshot => {
+			querySnapshot.forEach(fam => {
+				inst.famArr[i++] = fam.data();
+			});
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	ReportManpower.prototype.pullLossData = function() {
+		const inst = this;
+		this.lossArr = [];
+		var i = 0;
+		this.db.collection('users/' + this.userRef.uid + '/products/np002/factoryFileTypes/material/loss').get().then(querySnapshot => {
+			querySnapshot.forEach(loss => {
+				inst.lossArr[i++] = loss.data();
+			});
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	ReportManpower.prototype.getOLECurrent = function() {
+		//OLE = (refP[id = 1] / MICurrent ) * 100;
+		return (this.refPArr[1].value / this.getMICurrent() * 100);
+	};
+
+	ReportManpower.prototype.getMICurrent = function() {
+		//MI = refP[id = 0] / refP[id = 2];
+		if(refPArr.length > 2)
+			return (this.refPArr[0].value / this.refPArr[2].value);
+		return 0;
+	};
+
+	ReportManpower.prototype.getOLEVision = function() {
+		//OLE = refP[id = 1] / MIVision * 100;
+		return (this.refPArr[1].value / this.getMIVision() * 100);
+	};
+
+	ReportManpower.prototype.getMIVision = function() {
+		//MI = afterVision[id = 0] / refPArr[id = 2];
+		if(this.refPArr.length > 2) {
+			return (this.afterVisionArr[0].value / this.refPArr[2]);
+		}
+		return 0;
+	};
+
+	ReportManpower.prototype.getLossesTotalInHman = function() {
+		//hman total = lossesHeaderArr(id = 3)
+		var sum = 0;
+		const headerName = this.lossesHeaderArr[3];
+		for(var i = 0; i < this.lossesArr.length; i++)
+			sum += this.lossesArr[i][headerName];
+		return sum;
+	};
+
+	ReportManpower.prototype.getLossesTotalInKusd = function() {
+		//kUSD total = lossesHeaderArr(id = 8)
+		var sum = 0;
+		const headerName = this.lossesHeaderArr[8];
+		for(var i = 0; i < this.lossesArr.length; i++)
+			sum += this.lossesArr[i][headerName];
+		return sum;
+	};
+
+	ReportManpower.prototype.getPotentialsTotalInHman = function() {
+		//hman total = potentialsHeaderArr(id = 2)
+		var sum = 0;
+		const headerName = this.potentialsHeaderArr[2];
+		for(var i = 0; i < this.potentialsArr.length; i++)
+			sum += this.potentialsArr[i][headerName];
+		return sum;
+	};
+
+	ReportManpower.prototype.getPotentialsTotalInKusd = function() {
+		//kUSD total = potentialsHeaderArr(id = 5)
+		var sum = 0;
+		const headerName = this.potentialsHeaderArr[5];
+		for(var i = 0; i < this.potentialsArr.length; i++)
+			sum += this.potentialsArr[i][headerName];
+		return sum;
+	};
+
+	ReportManpower.prototype.getLossesTotalByFamilyInHMan = function() {
+		//hman total = lossesHeaderArr(id = 3)
+		const hmanHeaderName = this.lossesHeaderArr[5];
+		const famHeaderName = this.lossesHeaderArr[2];
+		var familyName;
+		var sum = new Array(this.famArr.length).fill(0);
+		for(var i = 0; i < this.famArr.length; i++) {
+			familyName = this.famArr[i].name;
+			for(var j = 0; j < this.lossesArr.length; j++) {
+				if(familyName === this.lossesArr[j][famHeaderName]) {
+					sum[familyName] += this.lossesArr[j][hmanHeaderName];
+				}
+			}
+		}
+		return sum;
+	};
+
+	ReportManpower.prototype.getLossesTotalByFamilyInKusd = function() {
+		//kUSD total = lossesHeaderArr(id = 8)
+		const kusdHeaderName = this.lossesHeaderArr[8];
+		const famHeaderName = this.lossesHeaderArr[2];
+		var familyName;
+		var sum = new Array(this.famArr.length).fill(0);
+		for(var i = 0; i < this.famArr.length; i++) {
+			familyName = this.famArr[i].name;
+			for(var j = 0; j < this.lossesArr.length; j++) {
+				if(familyName === this.lossesArr[j][famHeaderName]) {
+					sum[familyName] += this.lossesArr[j][kusdHeaderName];
+				}
+			}
+		}
+		return sum;
+	};
+
+	ReportManpower.prototype.getPotentialsTotalByFamilyInHMan = function() {
+		//hman total = potentialsHeaderArr(id = 2)
+		const famHeaderName = this.lossesHeaderArr[2];
+		const hmanHeaderName = this.potentialsHeaderArr[2];
+		var familyName;
+		var sum = new Array(this.famArr.length).fill(0);
+		for(var i = 0; i < this.famArr.length; i++) {
+			familyName = this.famArr[i].name;
+			for(var j = 0; j < this.potentialsArr.length; j++) {
+				if(familyName === this.lossesArr[j][famHeaderName]) {
+					sum[i] += this.potentialsArr[j][hmanHeaderName];
+				}
+			}
+		}
+		return sum;
+	};
+
+	ReportManpower.prototype.getPotentialsTotalByFamilyInKusd = function() {
+		//kUSD total = potentialsHeaderArr(id = 5)
+		const famHeaderName = this.lossesHeaderArr[2];
+		const kusdHeaderName = this.potentialsHeaderArr[5];
+		var familyName;
+		var sum = new Array(this.famArr.length).fill(0);
+		for(var i = 0; i < this.famArr.length; i++) {
+			familyName = this.famArr[i].name;
+			for(var j = 0; j < this.potentialsArr.length; j++) {
+				if(familyName === this.lossesArr[j][famHeaderName]) {
+					sum[i] += this.potentialsArr[j][kusdHeaderName];
+				}
+			}
+		}
+		return sum;
+	};
+
+	ReportManpower.prototype.getPotentialsTotalByLossInHMan = function() {
+		//hman total = potentialsHeaderArr(id = 2)
+		const lossHeaderName = this.lossesHeaderArr[1];
+		const hmanHeaderName = this.potentialsHeaderArr[2];
+		var lossName;
+		var sum = new Array(this.lossArr.length).fill(0);
+		for(var i = 0; i < this.lossArr.length; i++) {
+			lossName = this.lossArr[i].name;
+			for(var j = 0; j < this.potentialsArr.length; j++) {
+				if(lossName === this.lossesArr[j][lossHeaderName]) {
+					sum[i] += this.potentialsArr[j][hmanHeaderName];
+				}
+			}
+		}
+		return sum;
+	};
+
+	ReportManpower.prototype.getPotentialsTotalByLossInKusd = function() {
+		//kUSD total = potentialsHeaderArr(id = 5)
+		const lossHeaderName = this.lossesHeaderArr[1];
+		const kusdHeaderName = this.potentialsHeaderArr[5];
+		var lossName;
+		var sum = new Array(this.lossArr.length).fill(0);
+		for(var i = 0; i < this.lossArr.length; i++) {
+			lossName = this.lossArr[i].name;
+			for(var j = 0; j < this.potentialsArr.length; j++) {
+				if(lossName === this.lossesArr[j][lossHeaderName]) {
+					sum[i] += this.potentialsArr[j][kusdHeaderName];
+				}
+			}
+		}
+		return sum;
+	};
+
+	ReportManpower.prototype.displayOLECurrent = function(ole) {
+		displayNumberCount(0, ole, '%', this.currentOLEDOM);
+	};
+
+	ReportManpower.prototype.displayMICurrent = function(mi) {
+		displayNumberCount(0, mi, '', this.currentMIDOM);
+	};
+
+	ReportManpower.prototype.displayOLEVision = function(ole) {
+		displayNumberCount(0, ole, '%', this.visionOLEDOM);
+	};
+
+	ReportManpower.prototype.displayMIVision = function(mi) {
+		displayNumberCount(0, mi, '', this.visionMIDOM);
+	};
+
+	ReportManpower.prototype.displayOLEChange = function(oleCurrent, oleVision) {
+		var change;
+		if(oleVision >= oleCurrent) {
+			change = oleVision - oleCurrent;
+			this.OLEChangeStrDOM.val('Increase');
+			displayNumberCount(oleCurrent, change, '%', this.OLEChangeValueDOM);
+			this.OLEArrow.attr('src','resources/up_arrow_green.png');
+		}
+		else {
+			change = oleCurrent - oleVision;
+			this.OLEChangeStrDOM.val('Decrease');
+			displayNumberCount(oleVision, change, '%', this.OLEChangeValueDOM);
+			this.OLEArrow.attr('src','resources/down_arrow_red.png');
+		}
+	};
+
+	ReportManpower.prototype.displayMIChange = function(miCurrent, miVision) {
+		var change;
+		if(miVision >= miCurrent) {
+			change = miVision - miCurrent;
+			this.MIChangeStrDOM.val('Increase');
+			displayNumberCount(miCurrent, change, '', this.MIChangeValueDOM);
+			this.MIArrow.attr('src','resources/up_arrow_green.png');
+		}
+		else {
+			change = miCurrent - miVision;
+			this.MIChangeStrDOM.val('Decrease');
+			displayNumberCount(miVision, change, '', this.MIChangeValueDOM);
+			this.MIArrow.attr('src','resources/down_arrow_red.png');
+		}
+	};
+
+	ReportManpower.prototype.initGraphicRepresentation = function() {
+		//get losses total by family
+		const theoreticalTime = this.refPArr[2];
+		const manpowerHours = this.refPArr[4];
+
+		const sumOfLossesByFam = this.getLossesTotalByFamilyInHMan();
+		const sumOfPotentialsByFam = this.getPotentialsTotalByFamilyInHMan();
+
+		var openingTime, workingHours, sumOfFamMac, sumOfFamOvm, macName, ovmName;
+
+		//get 'mac' and 'man' family name from famArr
+		$.each(this.famArr, (i, family) => {
+			if(family.codeName === 'mac')
+				macName = family.name;
+			if(family.codeName === 'ovm')
+				ovmName = family.name;
+		});
+		if(this.graphicRepresentationUnit.text() === '(H Man)') {
+			openingTime = this.refPArr[3];
+			workingHours = this.refPArr[0];
+			sumOfFamMac = sumOfLossesByFam[macName];
+			sumOfFamOvm = sumOfLossesByFam[ovmName];
+		}
+		else {
+			openingTime = this.afterVisionArr[2];
+			workingHours = this.afterVisionArr[0];
+			sumOfFamMac = sumOfPotentialsByFam[macName];
+			sumOfFamOvm = sumOfPotentialsByFam[ovmName];
+		}
+		//fill in data in the layout
+		this.graphicRepresentationManPowerHours.text(manpowerHours);
+		this.graphicRepresentationFamMac.text(sumOfFamMac);
+		this.graphicRepresentationFamOvm.text(sumOfFamOvm);
+		this.graphicRepresentationTheoreticalTime.text(theoreticalTime);
+		this.graphicRepresentationOpeningTime.text(openingTime);
+		this.graphicRepresentationWorkingHours.text(workingHours);
+	};
+
+	ReportManpower.prototype.initReferenceVisionGraph = function() {
+		const ctx = document.getElementsByClassName("reference-vision-graph-canvas")[0].getContext('2d');
+		const gradientLine = ctx.createLinearGradient(0, 0, 0, 100); 
+    	gradientLine.addColorStop(0, 'rgba(0, 119, 255, 1)');
+    	gradientLine.addColorStop(1, 'rgba(0, 242, 254, 1)');
+    	const lossesTotal = this.getLossesTotalInHman(), potentialsTotal = this.getPotentialsTotalInHman();
+		const chart = new Chart(ctx, {
+			type : 'bar',
+			data : {
+				labels : ['Reference', 'Vision'],
+				datasets : [{
+					label : [''],
+					data : [potentialsTotal, lossesTotal],
+					borderColor : gradientLine,
+					pointBackgroundColor : 'rgba(255,255,255,1)',
+					pointBorderColor : 'rgba(245,245,245,1)',
+					pointHoverBackgroundColor : 'rgba(255,255,255,1)',
+					pointHoverBorderColor : 'rgba(235,235,235,1)',
+					pointRadius : 4,
+					pointHoverRadius : 5,
+					fill : false,
+					type : 'line'
+				},
+				{
+					label : [''],
+					data : [lossesTotal,potentialsTotal],
+					backgroundColor : [
+						'rgba(52,58,64,1)',
+						'rgba(52,58,64,1)'
+					],
+					borderColor : [
+						'rgba(52,58,64,1)',
+						'rgba(52,58,64,1)',
+					],
+					borderWidth : 1.5,
+				},
+				{
+					label : [''],
+					data : [0, (lossesTotal - potentialsTotal)],
+					backgroundColor : [
+						'rgba(52,58,64,1)',
+						'rgba(52,58,64,1)'
+					],
+					borderColor : [
+						'rgba(52,58,64,1)',
+						'rgba(52,58,64,1)',
+					],
+					borderWidth : 1.5,
+				}]
+			},
+			options: {
+				responsive : true,
+				maintainAspectRatio : false,
+				showAllTooltips: false, 
+				legend : { display : false },
+        		scales : {
+    				xAxes: [{
+    					stacked : true,
+    					ticks : {
+    						fontColor : '#696969',
+    						fontSize : 9
+    					},
+                		gridLines: {
+                    		display:false,
+                    		drawBorder : false
+                		}
+            		}],
+    				yAxes: [{
+    					stacked : true,
+    					ticks : {
+    						display : true,
+    						stepSize : 20,
+    						max : 100,
+    						min : 0,
+    						fontSize : 10,
+    					},
+                		gridLines: {
+                			display : true,
+                			drawBorder : false,
+                		}   
+            		}]
+    			},
+    			tooltips : {
+    				yAlign : 'bottom',
+    				titleFontSize : 0,
+    				backgroundColor : 'rgba(0,0,0,0)',
+    				bodyFontColor : '#000',
+    				bodyFontSize : 0,
+    				bodyFontStyle : 'bold',
+    				footerFontColor : '#000',
+    				displayColors : false
+    			},
+    		}
+		});
+	};
+
+	ReportManpower.prototype.initParetoGraph = function(dataArr) {
+		const inst = this;
+		const ctx = document.getElementsByClassName("pareto-graph-canvas")[0].getContext('2d');
+		var dataNameArr, dataColorArr;
+		if(this.paretoOption2.text() === 'Family') {
+			dataNameArr = this.famArr.map(a => a.name);
+			dataColorArr = this.famArr.map(b => b.color); 
+		}
+		else {
+			dataNameArr = this.lossArr.map(a => a.name);
+			dataColorArr = this.lossArr.map(b => b.color); 	
+		}
+		const chart = new Chart(ctx, {
+			type : 'bar',
+			data : {
+				labels : dataNameArr,
+				datasets : [{
+					label : dataArr,
+					data : dataArr,
+					backgroundColor : dataColorArr,
+					borderColor : dataColorArr,
+					borderWidth : 1,
+				}]
+			},
+			options: {
+				responsive : true,
+				maintainAspectRatio : false,
+				showAllTooltips: false, 
+				legend : { display : false },
+        		scales : {
+    				xAxes: [{
+    					stacked : true,
+    					ticks : {
+    						fontColor : '#696969',
+    						fontSize : 9
+    					},
+                		gridLines: {
+                    		display:false,
+                    		drawBorder : false
+                		}
+            		}],
+    				yAxes: [{
+    					stacked : true,
+    					ticks : {
+    						display : true,
+    						stepSize : 20,
+    						max : 100,
+    						min : 0,
+    						fontSize : 10,
+    					},
+                		gridLines: {
+                			display : true,
+                			drawBorder : false,
+                		}   
+            		}]
+    			},
+    			tooltips : {
+    				yAlign : 'bottom',
+    				titleFontSize : 0,
+    				backgroundColor : 'rgba(0,0,0,0)',
+    				bodyFontColor : '#000',
+    				bodyFontSize : 0,
+    				bodyFontStyle : 'bold',
+    				footerFontColor : '#000',
+    				displayColors : false
+    			},
+    		}
+		});
+	};
+
+	ReportManpower.prototype.getParetoLossesByFamilyInHMan = function() {
+		return this.getLossesTotalByFamilyInHMan();
+	};
+
+	ReportManpower.prototype.getParetoLossesByFamilyInKusd = function() {
+		return this.getLossesTotalByFamilyInKusd();
+	};
+
+	ReportManpower.prototype.getParetoPotentialsByFamilyInHMan = function() {
+		return this.getPotentialsTotalByFamilyInHMan();
+	};
+
+	ReportManpower.prototype.getParetoPotentialsByFamilyInKusd = function() {
+		return this.getPotentialsTotalByFamilyInKusd();
+	};
+
+	ReportManpower.prototype.getParetoPotentialsByLossInHMan = function() {
+		return this.getPotentialsTotalByLossInHMan();
+	};
+
+	ReportManpower.prototype.getParetoPotentialsByLossInKusd = function() {
+		return this.getPotentialsTotalByLossInKusd();
+	};
+
+	ReportManpower.prototype.getParetoDataSet = function() {
+		if(this.paretoOption1.text() === 'Losses') {
+			//paretoOption2 in this case will always be 'Family'
+			if(this.paretoOption3.text() === '(H Man)')
+				return this.getParetoLossesByFamilyInHMan();
+			//else
+			return this.getParetoLossesByFamilyInKusd();
+		}
+		//else
+		//paretoOption1 in this case is 'Potentials'
+		if(this.paretoOption2.text() === 'Family') {
+			if(this.paretoOption3.text() === '(H Man)')
+				return this.getParetoPotentialsByFamilyInHMan();
+			//else
+			return this.getParetoPotentialsByFamilyInKusd();
+		}
+		//esle
+		//paretoOption2 in this case is 'Loss'
+		if(this.paretoOption3.text() === '(H Man)')
+			return this.getParetoPotentialsByLossInHMan();
+		//else
+		return this.getParetoPotentialsByLossInKusd();
+	};
+
+	ReportManpower.prototype.onComponentChanged = function() {
+		this.referencePeriodValue = this.referencePeriod.find(':selected').val();
+		this.lineValue = this.line.find(':selected').val();
+		if(this.referencePeriodValue != 0 && this.lineValue != 0) {
+			this.pullDataWithVersion();
+			this.initGraphs();
+		}
+	};
+
+	//FUNCTION TO DISPLAY NUMBERS IN INCREASING OR DECREASING EFFECT
+	function displayNumberCount(start, end, str, targetElement) {
+		//NOTE : Try to keep the start-end diff not more than 250
+		var timer = setInterval(function() {
+			targetElement.text((start++) + str);
+			if(start > end)
+				clearInterval(timer);
+		}, 7);
+	};
+
+	//FUCNTION TO DISPLAY TEXT DIALOG AT THE TOP
+	function displayDialog(msg, dialogType) {
+		$('html, body').scrollTop(0);
+		var dialogBox = $('.alert-' + dialogType);
+		if(dialogBox.length === 0) //dialogBox with class 'dialogType' does not exsists
+			dialogBox =$('.alert-warning');
+		dialogBox.html(msg);
+		dialogBox.fadeIn();
+		var timer = setInterval(function() {
+			dialogBox.fadeOut();
+			clearInterval(timer);
+		}, 4000);
+	};
+
+	$(document).ready(function() {
+		firebase.auth().onAuthStateChanged(function(user) {
+			if(user) {
+				//User is signed in
+				const inspector = new Inspector(user);
+				inspector.checkDisabled();
+				const reportManpower = new ReportManpower(user);
+			}
+		});
+	})
+
+</script>
+</head><body>
+	<div class="outer-wrapper container-fluid"></div>
+	<div class="outer-container">
+		<div class="alert alert-success dialog-box text-center"></div>
+		<div class="alert alert-warning dialog-box text-center"></div>
+		<div class="alert alert-danger dialog-box text-center"></div>
+		<div class="header-container container-fluid">
+			<header class="container-fluid row">
+				<div class="container slider-button-container col-1">
+					<div class="container slider-button header-item">
+						<img src="resources/side_bar_slider.png" alt="SLIDE" class="side-bar-slider">
+					</div>
+				</div>
+				<div class="container nav-container col-11">
+					<nav class="container row">
+						<div class="container col-11">
+							<ul class="nav">
+								<li class="nav-item top-nav-item header-item">
+									<a href="/products/factorymodal/" class="nav-link text-muted"><small>Overview</small></a>
+								</li>
+								<li class="nav-item top-nav-item top-nav-item-active header-item">
+									<a class="nav-link active"><small>Analytics</small></a>
+								</li>
+							</ul>
+						</div>
+						<div class="container header-item col-1">
+							<div class="d-inline-block m-2 float-right dropdown">
+								<i class="fa fa-chevron-circle-down text-primary d-block dropdown-toggle" data-toggle="dropdown" style="font-size: 170%;"></i>
+								<div class="dropdown-menu">
+									<a href="/products.html" class="dropdown-item text-medium text-low">Home</a>
+									<div class="dropdown-divider"></div>
+									<a class="dropdown-item text-medium text-low" id="nav-signout-icon">Sign Out</a>
+								</div>
+							</div>
+						</div>
+					</nav>
+				</div>
+			</header>
+		</div>
+		<div class="side-bar-container">
+			<ul class="nav flex-column">
+				<li class="nav-item side-nav-item">
+					<a href="analyticslayout.html" class="nav-link p-2">
+						<img src="resources/analytics_side_bar.png" class="opacity-5" alt="Analytics">
+					</a>
+				</li>
+				<li class="nav-item side-nav-item">
+					<a class="nav-link p-2 active side-nav-item-active">
+						<img src="resources/reports_side_bar.png" alt="Reports">
+					</a>
+				</li>
+				<li class="nav-item side-nav-item">
+					<a href="coststructure.html" class="nav-link p-2">
+						<img src="resources/cost_structure_side_bar.png" class="opacity-5" alt="Cost Structure">
+					</a>
+				</li>
+				<li class="nav-item side-nav-item">
+					<a href="masterplan.html" class="nav-link p-2">
+						<img src="resources/masterplan_side_bar.png" class="opacity-5" alt="Masterplan">
+					</a>
+				</li>
+			</ul>
+		</div>
+		<div class="main-container pt-0 pr-0">
+			<main>
+				<div class="container-fluid section bg-light pl-5 pr-0" id="section-1">
+					<div class="border-bottom p-4">
+						<div class="d-inline-block font-weight-bold h5 mr-5">
+							Reports
+						</div>
+						<div class="d-inline-block mx-2">
+							<select class="reference-period-select select-type-input bg-primary text-white text-medium p-1 px-2 rounded font-weight-light d-block">
+								<option value="0">Reference Period</option>
+							</select>
+						</div>
+						<div class="d-inline-block mx-2">
+							<select class="line-select select-type-input bg-primary text-white text-medium p-1 px-2 rounded font-weight-light d-block">
+								<option value="0">Line</option>
+							</select>
+						</div>
+					</div>
+					<div class="border-bottom py-1 px-4">
+						<ul class="nav nav-justified">
+							<li class="nav-item">
+								<a class="nav-link text-small text-muted font-weight-bold" href="/products/factorymodal/reportmachine.html" target="_self">MACHINE</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link text-small text-muted font-weight-bold" href="/products/factorymodal/reportenergy.html" target="_self">ENERGY</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link text-small text-muted font-weight-bold" href="/products/factorymodal/reportmaterial.html" target="_self">MATERIAL</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link text-danger text-small font-weight-bold" href="/products/factorymodal/reportmanpower.html" target="_self">MANPOWER</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link text-small text-muted font-weight-bold" href="/products/factorymodal/reportmaintaince.html" target="_self">MAINTAINCE</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link text-small text-muted font-weight-bold" href="/products/factorymodal/reportvolume.html" target="_self">VOLUME</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link text-small text-muted font-weight-bold" href="/products/factorymodal/reportfinance.html" target="_self">FINANCE</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link text-small text-muted font-weight-bold" href="/products/factorymodal/settings.html" target="_self">SETTINGS</a>
+							</li>
+						</ul>
+					</div>
+				</div>
+				<div class="container">
+					<div class="row my-4">
+						<div class="col-6">
+							<div class="row my-1">
+								<div class="col-6">
+									<div class="card bg-dark">
+										<div class="card-head mt-1">
+											<div class="container text-white text-small">Overall Labour Efficiency(Current)</div>
+										</div>
+										<div class="card-body pb-4">
+											<div class="ole-current-value text-center text-white font-weight-light">0%</div>
+										</div>
+									</div>
+								</div>
+								<div class="col-6">
+									<div class="card bg-dark">
+										<div class="card-head mt-1">
+											<div class="container text-white text-small">Manning Index(Current)</div>
+										</div>
+										<div class="card-body pb-4">
+											<div class="mi-current-value text-center text-white font-weight-light">0</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="row my-3">
+								<div class="col-6">
+									<div class="card bg-dark">
+										<div class="card-head mt-1">
+											<div class="container text-white text-small">Overall Labour Efficiency(Vision)</div>
+										</div>
+										<div class="card-body pb-4">
+											<div class="ole-arrow representing-arrow">
+												<img src="resources/down_arrow_green.png">
+											</div>
+											<div class="ole-vision-value text-center text-white font-weight-light">0%</div>
+											<div class="text-center text-white text-extra-small font-weight-light"><span class="ole-increase-str">Increase</span> by <span class="ole-increase-value">0%</span></div>
+										</div>
+									</div>
+								</div>
+								<div class="col-6">
+									<div class="card bg-dark">
+										<div class="card-head mt-1">
+											<div class="container text-white text-small">Manning Index(Vision)</div>
+										</div>
+										<div class="card-body pb-4">
+											<div class="mi-arrow representing-arrow">
+												<img src="resources/down_arrow_green.png">
+											</div>
+											<div class="mi-vision-value text-center text-white font-weight-light">0</div>
+											<div class="text-center text-white text-extra-small font-weight-light"><span class="mi-increase-str">Increase</span> by <span class="mi-increase-value">0</span></div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="col-6">
+							<div class="row my-1">
+								<div class="col-6">
+									<div class="card card-h-2">
+										<div class="card-head">
+											<div class="d-inline-block mx-1 my-2 text-medium text-dark font-weight-bold">Graphic Representation</div>
+											<div class="d-inline-block mx-1 my-2 text-medium graphic-representation-unit">
+												(H Man)
+											</div>
+										</div>
+										<div class="card-body">
+											<div class="text-center">
+												<img src="resources/report_manpower_graphic_representation.png" alt="ERROR_LOADING_RESOURCE" class="w-60">
+											</div>
+											<div class="graphic-representation-text graphic-representation-manpower-hours text-extra-small font-weight-bold">16707</div>
+											<div class="graphic-representation-text graphic-representation-fam-mac text-extra-small font-weight-bold">16538</div>
+											<div class="graphic-representation-text graphic-representation-fam-ovm text-extra-small font-weight-bold">103</div>
+											<div class="graphic-representation-text graphic-representation-theoretical-time bg-light rounded px-3 text-extra-small font-weight-bold">3517</div>
+											<div class="graphic-representation-text graphic-representation-opening-time bg-light rounded px-3 text-extra-small font-weight-bold">6999</div>
+											<div class="graphic-representation-text graphic-representation-working-hours bg-light rounded px-3 text-extra-small font-weight-bold">33348</div>
+										</div>
+									</div>
+								</div>
+								<div class="col-6">
+									<div class="card card-h-2">
+										<div class="card-head">
+											<div class="d-inline-block m-2 text-medium text-dark font-weight-bold">Reference &amp; Vision Comparision</div>
+											<div class="d-inline-block m-2 float-right">
+												<i class="fa fa-ellipsis-h text-muted d-block"></i>
+											</div>
+											<div class="clearfix"></div>
+										</div>
+										<div class="card-body">
+											<canvas class="reference-vision-graph-canvas graph-canvas"></canvas>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="container">
+					<div class="card pb-5">
+						<div class="card-body pb-5">
+							<div class="container h5 text-dark">
+								<strong>Pareto of <span class="pareto-option pareto-option-1" style="border-bottom: 3px solid #50e3c2;">Losses</span> by <span class="pareto-option pareto-option-2" style="border-bottom: 3px solid #50e3c2;">Family</span><span class="pareto-option pareto-option-3" style="margin-left: 10px; border-bottom: 3px solid #50e3c2;">(H Man)</span>
+								</strong>
+							</div>
+							<div class="text-dark text-small font-weight-bold d-inline-block ml-3">
+								Comparison of all (insert number of losses here) losses by grouping into their (insert number of families here) families.
+							</div>
+							<div class="d-inline-block float-right">
+								<select class="family-select select-type-input p-1 px-2 rounded text-small font-weight-bold d-block">
+									<option value="0">All Families</option>
+								</select>
+							</div>
+							<div class="clearfix"></div>
+						</div>
+					</div>
+				</div>
+			</main>
+		</div>
+	</div>
+</body></html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

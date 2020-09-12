@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Recorder</title>
+  <link rel="stylesheet" href="../node_modules/bulma/css/bulma.css">
+  <link rel="stylesheet" href="./css/breakdown.css">
+  <script src="../node_modules/chart.js"></script>
+  <script src="js/Chart.bundle.min.js"></script>
+  <script src="js/jquery-3.2.1.min.js"></script>
+
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="../bower_components/jquery-dropdown-checkboxes/dist/jquery.dropdowncheckboxes.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="../bower_components/jquery-dropdown-checkboxes/dist/jquery.dropdowncheckboxes.min.js"></script>
+
+  <!-- Firebase App is always required and must be first -->
+  <script src="https://www.gstatic.com/firebasejs/5.3.0/firebase-app.js"></script>
+
+  <!-- Add additional services that you want to use -->
+  <script src="https://www.gstatic.com/firebasejs/5.3.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/5.3.0/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/5.3.0/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/5.3.0/firebase-messaging.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/5.3.0/firebase-functions.js"></script>
+
+  <!-- Comment out (or don't include) services that you don't want to use -->
+  <!-- <script src="https://www.gstatic.com/firebasejs/5.3.0/firebase-storage.js"></script> -->
+
+  <script>
+    var config = {
+      apiKey: "AIzaSyCXWIr6ctkGUGYRvXsYgFG-NnCk6VRW_7Q",
+      authDomain: "nlyze-1.firebaseapp.com",
+      databaseURL: "https://nlyze-1.firebaseio.com",
+      projectId: "nlyze-1",
+      storageBucket: "nlyze-1.appspot.com",
+      messagingSenderId: "285435874741"
+    };
+    firebase.initializeApp(config);
+  </script>
+  <script defer src="https://use.fontawesome.com/releases/v5.1.0/js/all.js"></script>
+
+</head>
+
+
+
+
+<body onload="getData();">
+
+  <nav class="level navigation">
+    <div class="level-item has-text-centered">
+      <a href="./recorder.html"> Breakdown  </a>
+    </div>
+    <div class="level-item has-text-centered">
+      <a href="./reports.html"> Reports </a>
+    </div>
+    <div class="level-item has-text-centered">
+      <a href="./log.html"> log </a>
+    </div>
+    <div class="level-item has-text-centered">
+      <a href="./workforce.html"> workforce </a>
+    </div>
+    <div class="level-item has-text-centered">
+      <a href="./breakdown.html"> Plant </a>
+    </div>
+  </nav>
+
+
+
+  <div>
+  <select id = "year-menu">
+      <option selected>Select</option>
+        <option value="AllYear">AllYear</option>
+        <option value="2017">2017</option>
+        <option value="2018">2018</option>
+  </select>
+
+  <select id = "line-menu">
+      <option selected>Select</option>
+        <option value="AllLines" selected>AllLines</option>
+        <option value="Line 5">Line 5</option>
+  </select>
+
+  <label> Monthly </label>
+  <input type="checkbox" id="Monthly">
+
+  <label> Weekly </label>
+  <input type="checkbox" id="Weekly">
+  </div>
+
+
+
+
+  <div class="chart-container" style="position: relative; width:100vw">
+    <canvas id="myChart"></canvas>
+  </div>
+
+
+
+
+
+</body>
+
+<script src="./js/data.js"></script>
+
+
+
+</html>

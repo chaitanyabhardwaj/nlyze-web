@@ -1,0 +1,577 @@
+<!DOCTYPE html><html lang="en-US" dir="ltr"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" /><title>NLYZE | Factory Model</title><meta name="description" content="" /><meta name="owner" content="Nakul Malhotra"><meta name="author" content="Chaitanya Bhardwaj" /><base href="reportenergy.html" target="_self" /><meta name="referrer" content="origin-when-cross-origin" /><link rel="icon" type="image/x-icon" href="/resources/favicon_title.png" /><meta name="robots" content="index, nofollow">
+<link rel="stylesheet" type="text/css" href="lib/bootstrap-4/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" type="text/css" href="stylesheets/index-large.css">
+<link rel="stylesheet" type="text/css" href="stylesheets/reportmachine-large.css">
+<script src="scripts/jquery-3.2.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+<script src="lib/bootstrap-4/js/bootstrap.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-functions.js"></script>
+<script src="/scripts/main.js"></script>
+<script src="/scripts/productchecker.js"></script>
+<script src="/scripts/inspector.js"></script>
+<script src="scripts/Chart.bundle.min.js"></script>
+<script>
+	
+	'use strict';
+
+	//Initializing ReportEnergy
+	function ReportEnergy(user) {
+		const inst = this;
+		this.userRef = user;
+		this.db = firebase.firestore();
+		//shortcut to dom elements
+		this.referencePeriod = $('.reference-period-select');
+		this.referencePeriodValue = this.referencePeriod.val();
+		//set event listeners
+		this.referencePeriod.change(function() {
+			//inst.onComponentChanged();
+			inst.referencePeriodValue = inst.referencePeriod.val();
+			inst.constructReport();
+		});
+		//Call init functions
+		this.pullData();
+	};
+
+	ReportEnergy.prototype.pullData = function() {
+		this.initLayout();
+	};
+
+	ReportEnergy.prototype.constructReport = function() {
+		const inst = this;
+		const dataPull = this.pullDataWithVersion();
+		dataPull.then(() => {
+			inst.displayDataWithVersion();
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	ReportEnergy.prototype.initLayout = function() {
+		//clear existing data
+		$('input').val('');
+		$('select').find('option.data-option').remove();
+		//fetch referencePeriod
+		this.initReferencePeriod();
+		//fetch line data
+		this.initLines();
+	};
+
+	ReportEnergy.prototype.pullDataWithVersion = function() {
+		console.log('pullDataWithVersion -s');
+		const inst = this;
+		const referencePeriodRef = this.db.doc('users/' + this.userRef.uid + '/products/np002/factoryFileTypes/energy/referencePeriod/' + this.referencePeriodValue);
+		return referencePeriodRef.get().then(doc => {
+			if(doc.exists) {
+				if(doc.data().initialWritten) {
+					var pullRefPH, pullLossesH, pullLossesD;
+					if(doc.data().updatedWritten) {
+						//pull and store updated table data
+						pullRefPH = inst.pullReferencePeriodHeaders('updated');
+						//inst.pullReferencePeriodData('updated');
+						//inst.pullAfterVisionData('updated');
+						pullLossesH = inst.pullLossesHeaders('updated');
+						pullLossesD = inst.pullLossesData('updated');
+						//inst.pullPotentialsData('updated');
+					}
+					else {
+						//pull and store initial table data
+						pullRefPH = inst.pullReferencePeriodHeaders('initial');
+						//inst.pullReferencePeriodData('initial');
+						//inst.pullAfterVisionData('initial');
+						pullLossesH = inst.pullLossesHeaders('initial');
+						pullLossesD = inst.pullLossesData('initial');
+						//inst.pullPotentialsData('initial');
+					}
+					return (pullRefPH && pullLossesH && pullLossesD);
+				}
+				else {
+					displayDialog("Cannot find the Reference Period table. Upload Reference Period or contact support.", "danger");
+				}
+			}
+			else {
+				displayDialog("Cannot find the Reference Period table. Upload Reference Period or contact support.", "danger");
+			}
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	ReportEnergy.prototype.initGraphs = function() {
+
+	};
+
+	ReportEnergy.prototype.initReferencePeriod = function() {
+		this.db.collection('users/' + this.userRef.uid + '/products/np002/factoryFileTypes/energy/referencePeriod/').get().then(querySnapshot => {
+			querySnapshot.forEach(ref => {
+				$("<option class='data-option' value='" + ref.id + "'>").appendTo(".reference-period-select").text(ref.id);
+			});
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	ReportEnergy.prototype.initLines = function() {
+		this.db.collection('users/' + this.userRef.uid + '/products/np002/areaLayout').get().then(querySnapshot => {
+			querySnapshot.forEach(area => {
+				$("<option class='data-option' value='" + area.data().line + "'>").appendTo(".line-select").text(area.data().line);
+			});
+		}).catch(err => {
+			console.log(err);
+		});	
+	};
+
+	ReportEnergy.prototype.pullReferencePeriodHeaders = function(version) {
+		const inst = this;
+		this.refPHeadersArr = [];
+		var i = 0;
+		this.db.collection('users/' + this.userRef.uid + '/products/np002/factoryFileTypes/energy/referencePeriod/' + this.referencePeriodValue + '/' + version + 'ReferencePeriodHeaders').orderBy('id').get().then(querySnapshot => {
+			querySnapshot.forEach(refHeader => {
+				inst.refPHeadersArr[i++] = refHeader.data();
+			});
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	ReportEnergy.prototype.pullLossesHeaders = function(version) {
+		const inst = this;
+		this.lossesHeaderArr = [];
+		this.potentialsHeaderArr = [];
+		var i = 0, j = 0;
+		this.db.collection('users/' + this.userRef.uid + '/products/np002/factoryFileTypes/energy/referencePeriod/' + this.referencePeriodValue + '/' + version + 'Headers').orderBy('id').get().then(querySnapshot => {
+			querySnapshot.forEach(lossHeader => {
+				inst.lossesHeaderArr[i++] = lossHeader.data();
+			});
+			//pull potentialHeaders
+			$.each(inst.lossesHeaderArr, (i, header) => {
+				if(header.toPotentials)
+					inst.potentialsHeaderArr[j++] = header;
+			});
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	ReportEnergy.prototype.pullLossesData = function(version) {
+		const inst = this;
+		this.lossesArr = [];
+		var i = 0, j = 0, k = 0;
+		this.db.collection('users/' + this.userRef.uid + '/products/np002/factoryFileTypes/energy/referencePeriod/' + this.referencePeriodValue + '/' + version + 'FileObj').get().then(querySnapshot => {
+			querySnapshot.forEach(obj => {
+				inst.lossesArr[i++] = obj.data();
+			});
+			//pull lossData
+			inst.pullLossData();
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	ReportEnergy.prototype.initGraphicRepresentationGraph = function() {
+		const ctx = document.getElementsByClassName("graphic-repersentation-graph-canvas")[0].getContext('2d');
+		const gradientGreen = ctx.createLinearGradient(0, 0, 0, 100); 
+    	gradientGreen.addColorStop(1, 'rgba(70, 147, 43, 1)');
+    	gradientGreen.addColorStop(0, 'rgba(177, 231, 90, 1)');
+    	const gradientRed = ctx.createLinearGradient(0, 0, 0, 100); 
+    	gradientRed.addColorStop(0, 'rgba(236, 77, 93, 1)');
+    	gradientRed.addColorStop(1, 'rgba(159, 15, 35, 1)');
+    	const gradientYellow = ctx.createLinearGradient(0, 0, 0, 250); 
+    	gradientYellow.addColorStop(1, 'rgba(249, 115, 106, 1)');
+    	gradientYellow.addColorStop(0, 'rgba(242, 171, 128, 1)');
+
+		const chart = new Chart(ctx, {
+			type : 'bar',
+			data : {
+				labels : ['Reference', 'Vision'],
+				datasets : [{
+					label : [''],
+					data : [80, 60],
+					borderColor : '#696969',
+					pointBackgroundColor : 'rgba(255,255,255,1)',
+					pointBorderColor : 'rgba(245,245,245,1)',
+					pointHoverBackgroundColor : 'rgba(255,255,255,1)',
+					pointHoverBorderColor : 'rgba(235,235,235,1)',
+					pointRadius : 4,
+					pointHoverRadius : 5,
+					fill : false,
+					type : 'line'
+				},
+				{
+					label : [''],
+					data : [40,40],
+					backgroundColor : [gradientGreen, gradientGreen]
+				},
+				{
+					label : [''],
+					data : [40,20],
+					backgroundColor : [gradientRed, gradientRed]
+				},
+				{
+					label : [''],
+					data : [20,40],
+					backgroundColor : [gradientYellow, gradientYellow]
+				}]
+			},
+			options: {
+				responsive : true,
+				hover : { mode : null},
+				maintainAspectRatio : false,
+				showAllTooltips: false, 
+				legend : { display : false },
+        		scales : {
+    				xAxes: [{
+    					stacked : true,
+    					ticks : {
+    						fontColor : '#696969',
+    						fontSize : 9,
+    					},
+                		gridLines: {
+                    		display: false,
+                    		drawBorder : false
+                		}
+            		}],
+    				yAxes: [{
+    					stacked : true,
+    					ticks : {
+    						display : true,
+    						stepSize : 20,
+    						max : 100,
+    						min : 0,
+    						fontSize : 10,
+    						fontColor : '#696969'
+    					},
+                		gridLines: {
+                			display: true,
+                			drawBorder : false
+                		}   
+            		}]
+    			},
+    			tooltips : {
+    				yAlign : 'bottom',
+    				titleFontSize : 0,
+    				backgroundColor : 'rgba(0,0,0,0)',
+    				bodyFontColor : '#000',
+    				bodyFontSize : 0,
+    				bodyFontStyle : 'bold',
+    				footerFontColor : '#000',
+    				displayColors : false
+    			},
+    		}
+		});
+	};
+
+	ReportEnergy.prototype.initReferenceVisionGraph = function() {
+		const ctx = document.getElementsByClassName("reference-vision-graph-canvas")[0].getContext('2d');
+		const gradientLine = ctx.createLinearGradient(0, 0, 0, 100); 
+    	gradientLine.addColorStop(0, 'rgba(0, 119, 255, 1)');
+    	gradientLine.addColorStop(1, 'rgba(0, 242, 254, 1)');
+		const chart = new Chart(ctx, {
+			type : 'bar',
+			data : {
+				labels : ['Reference', 'Vision'],
+				datasets : [{
+					label : [''],
+					data : [40, 80],
+					borderColor : gradientLine,
+					pointBackgroundColor : 'rgba(255,255,255,1)',
+					pointBorderColor : 'rgba(245,245,245,1)',
+					pointHoverBackgroundColor : 'rgba(255,255,255,1)',
+					pointHoverBorderColor : 'rgba(235,235,235,1)',
+					pointRadius : 4,
+					pointHoverRadius : 5,
+					fill : false,
+					type : 'line'
+				},
+				{
+					label : [''],
+					data : [40,80],
+					backgroundColor : [
+						'rgba(52,58,64,1)',
+						'rgba(52,58,64,1)'
+					],
+					borderColor : [
+						'rgba(52,58,64,1)',
+						'rgba(52,58,64,1)',
+					],
+					borderWidth : 1.5,
+				}]
+			},
+			options: {
+				responsive : true,
+				maintainAspectRatio : false,
+				showAllTooltips: false, 
+				legend : { display : false },
+        		scales : {
+    				xAxes: [{
+    					stacked : true,
+    					ticks : {
+    						fontColor : '#696969',
+    						fontSize : 9
+    					},
+                		gridLines: {
+                    		display:false,
+                    		drawBorder : false
+                		}
+            		}],
+    				yAxes: [{
+    					stacked : true,
+    					ticks : {
+    						display : true,
+    						stepSize : 20,
+    						max : 100,
+    						min : 0,
+    						fontSize : 10,
+    					},
+                		gridLines: {
+                			display : true,
+                			drawBorder : false,
+                		}   
+            		}]
+    			},
+    			tooltips : {
+    				yAlign : 'bottom',
+    				titleFontSize : 0,
+    				backgroundColor : 'rgba(0,0,0,0)',
+    				bodyFontColor : '#000',
+    				bodyFontSize : 0,
+    				bodyFontStyle : 'bold',
+    				footerFontColor : '#000',
+    				displayColors : false
+    			},
+    		}
+		});
+	};
+
+	//FUCNTION TO DISPLAY TEXT DIALOG AT THE TOP
+	function displayDialog(msg, dialogType) {
+		$('html, body').scrollTop(0);
+		var dialogBox = $('.alert-' + dialogType);
+		if(dialogBox.length === 0) //dialogBox with class 'dialogType' does not exsists
+			dialogBox =$('.alert-warning');
+		dialogBox.html(msg);
+		dialogBox.fadeIn();
+		var timer = setInterval(function() {
+			dialogBox.fadeOut();
+			clearInterval(timer);
+		}, 4000);
+	};
+
+	$(document).ready(function() {
+		firebase.auth().onAuthStateChanged(function(user) {
+			if(user) {
+				//User is signed in
+				const inspector = new Inspector(user);
+				inspector.checkDisabled();
+				const reportEnergy = new ReportEnergy(user);
+			}
+		});
+	})
+
+</script>
+</head><body>
+	<div class="outer-wrapper container-fluid"></div>
+	<div class="outer-container">
+		<div class="alert alert-success dialog-box text-center"></div>
+		<div class="alert alert-warning dialog-box text-center"></div>
+		<div class="alert alert-danger dialog-box text-center"></div>
+		<div class="header-container container-fluid">
+			<header class="container-fluid row">
+				<div class="container slider-button-container col-1">
+					<div class="container slider-button header-item">
+						<img src="resources/side_bar_slider.png" alt="SLIDE" class="side-bar-slider">
+					</div>
+				</div>
+				<div class="container nav-container col-11">
+					<nav class="container row">
+						<div class="container col-11">
+							<ul class="nav">
+								<li class="nav-item top-nav-item header-item">
+									<a href="/products/factorymodal/" class="nav-link text-muted"><small>Overview</small></a>
+								</li>
+								<li class="nav-item top-nav-item top-nav-item-active header-item">
+									<a class="nav-link active"><small>Analytics</small></a>
+								</li>
+							</ul>
+						</div>
+						<div class="container header-item col-1">
+							<div class="d-inline-block m-2 float-right dropdown">
+								<i class="fa fa-chevron-circle-down text-primary d-block dropdown-toggle" data-toggle="dropdown" style="font-size: 170%;"></i>
+								<div class="dropdown-menu">
+									<a href="/products.html" class="dropdown-item text-medium text-low">Home</a>
+									<div class="dropdown-divider"></div>
+									<a class="dropdown-item text-medium text-low" id="nav-signout-icon">Sign Out</a>
+								</div>
+							</div>
+						</div>
+					</nav>
+				</div>
+			</header>
+		</div>
+		<div class="side-bar-container">
+			<ul class="nav flex-column">
+				<li class="nav-item side-nav-item">
+					<a href="analyticslayout.html" class="nav-link p-2">
+						<img src="resources/analytics_side_bar.png" class="opacity-5" alt="Analytics">
+					</a>
+				</li>
+				<li class="nav-item side-nav-item">
+					<a class="nav-link p-2 active side-nav-item-active">
+						<img src="resources/reports_side_bar.png" alt="Reports">
+					</a>
+				</li>
+				<li class="nav-item side-nav-item">
+					<a href="coststructure.html" class="nav-link p-2">
+						<img src="resources/cost_structure_side_bar.png" class="opacity-5" alt="Cost Structure">
+					</a>
+				</li>
+				<li class="nav-item side-nav-item">
+					<a href="masterplan.html" class="nav-link p-2">
+						<img src="resources/masterplan_side_bar.png" class="opacity-5" alt="Masterplan">
+					</a>
+				</li>
+			</ul>
+		</div>
+		<div class="main-container pt-0 pr-0">
+			<main>
+				<div class="container-fluid section bg-light pl-5 pr-0" id="section-1">
+					<div class="border-bottom p-4">
+						<div class="d-inline-block font-weight-bold h5 mr-5">
+							Reports
+						</div>
+						<div class="d-inline-block mx-2">
+							<select class="reference-period-select select-type-input bg-primary text-white text-medium p-1 px-2 rounded font-weight-light d-block">
+								<option value="0">Reference Period</option>
+							</select>
+						</div>
+						<div class="d-inline-block mx-2">
+							<select class="line-select select-type-input bg-primary text-white text-medium p-1 px-2 rounded font-weight-light d-block">
+								<option value="0">Line</option>
+							</select>
+						</div>
+					</div>
+					<div class="border-bottom py-1 px-4">
+						<ul class="nav nav-justified">
+							<li class="nav-item">
+								<a class="nav-link text-small text-muted font-weight-bold" href="/products/factorymodal/reportmachine.html">MACHINE</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link text-small text-danger font-weight-bold" href="/products/factorymodal/reportenergy.html">ENERGY</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link text-small text-muted font-weight-bold" href="/products/factorymodal/reportmaterial.html">MATERIAL</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link text-small text-muted font-weight-bold" href="/products/factorymodal/reportmanpower.html">MANPOWER</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link text-small text-muted font-weight-bold" href="/products/factorymodal/reportmaintaince.html">MAINTAINCE</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link text-small text-muted font-weight-bold" href="/products/factorymodal/reportvolume.html">VOLUME</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link text-small text-muted font-weight-bold" href="/products/factorymodal/reportfinance.html">FINANCE</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link text-small text-muted font-weight-bold" href="/products/factorymodal/settings.html">SETTINGS</a>
+							</li>
+						</ul>
+					</div>
+				</div>
+				<div class="container">
+					<div class="row my-4">
+						<div class="col-3">
+							<div class="card bg-dark">
+								<div class="card-head mt-1">
+									<div class="container text-white text-small">EC(Current)</div>
+								</div>
+								<div class="card-body pb-4">
+									<div class="oee-percentage text-center text-white font-weight-light">0%</div>
+								</div>
+							</div>
+						</div>
+						<div class="col-3">
+							<div class="card bg-dark">
+								<div class="card-head mt-1">
+									<div class="container text-white text-small">EC(Vision)</div>
+								</div>
+								<div class="card-body pb-4">
+									<div class="representing-arrow">
+										<img src="resources/up_arrow_green.png">
+									</div>
+									<div class="oee-percentage text-center text-white font-weight-light">0%</div>
+									<div class="oee-increase text-center text-white text-extra-small font-weight-light">Increase by 0%</div>
+								</div>
+							</div>
+						</div>
+						<div class="col-3">
+							<div class="card bg-dark">
+								<div class="card-head mt-1">
+									<div class="container text-white text-small">OEE(Current)</div>
+								</div>
+								<div class="card-body pb-4">
+									<div class="oee-percentage text-center text-white font-weight-light">0%</div>
+								</div>
+							</div>
+						</div>
+						<div class="col-3">
+							<div class="card bg-dark">
+								<div class="card-head mt-1">
+									<div class="container text-white text-small">OEE(Vision)</div>
+								</div>
+								<div class="card-body pb-4">
+									<div class="representing-arrow">
+										<img src="resources/up_arrow_green.png">
+									</div>
+									<div class="oee-percentage text-center text-white font-weight-light">0%</div>
+									<div class="pr-increase text-center text-white text-extra-small font-weight-light">Increase by 0%</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="container">
+					<div class="card pb-5">
+						<div class="card-body pb-5">
+							<div class="container h5 text-dark">
+								<strong>
+									Reference and Vision Comparison<span class="pareto-option pareto-option-1" style="border-bottom: 3px solid #50e3c2;">(H Mac)</span>
+								</strong>
+							</div>
+							<div class="d-inline-block float-right">
+								<select class="family-select select-type-input p-1 px-2 rounded text-small font-weight-bold d-block">
+									<option value="0">MWH</option>
+								</select>
+							</div>
+							<div class="clearfix"></div>
+						</div>
+					</div>
+				</div>
+			</main>
+		</div>
+	</div>
+</body></html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

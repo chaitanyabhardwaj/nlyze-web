@@ -71,6 +71,7 @@
 		var settingsBttn;
 		return this.db.collection('products').get().then(querySnapshot => {
 			querySnapshot.forEach(doc => {
+				console.log(doc.data());
 				settingsBttn = '<button type="button" class="product-setting-button" data-id="' + doc.id + '">CONFIG</button>';
 				$("<tr class='data-row'>").appendTo("table#product-table")
 					.append($("<td class='td-product-name'>").text(doc.data().name))

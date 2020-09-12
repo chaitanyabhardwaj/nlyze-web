@@ -1,0 +1,1637 @@
+
+
+<!DOCTYPE html><html lang="en-US" dir="ltr"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" /><title>NLYZE | Factory Model</title><meta name="description" content="" /><meta name="owner" content="Nakul Malhotra"><meta name="author" content="Chaitanya Bhardwaj" /><base href="reportmaterial.html" target="_self" /><meta name="referrer" content="origin-when-cross-origin" /><link rel="icon" type="image/x-icon" href="/resources/favicon_title.png" /><meta name="robots" content="index, nofollow">
+<link rel="stylesheet" type="text/css" href="lib/bootstrap-4/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" type="text/css" href="stylesheets/index-large.css">
+<link rel="stylesheet" type="text/css" href="stylesheets/reportmaterial-large.css">
+<script src="scripts/jquery-3.2.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+<script src="lib/bootstrap-4/js/bootstrap.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-functions.js"></script>
+<script src="/scripts/main.js"></script>
+<script src="/scripts/productchecker.js"></script>
+<script src="/scripts/inspector.js"></script>
+<script src="scripts/Chart.bundle.min.js"></script>
+<script src="scripts/materialsettings.js"></script>
+<script>
+	
+	'use strict';
+
+	//Initializing ReportMaterial
+	function ReportMaterial(user) {
+		const inst = this;
+		this.userRef = user;
+		//Initialize firestore
+		this.db = firebase.firestore();
+
+		//STATIC COLORS ARRAY
+		this.paintBox = ["Aqua","Aquamarine","Black","Blue","BlueViolet","Brown","BurlyWood","CadetBlue","Chartreuse","Chocolate","Coral","CornflowerBlue","Crimson","Cyan","DarkBlue","DarkCyan","DarkGoldenRod","DarkGreen","DarkMagenta","DarkOliveGreen","Darkorange","DarkOrchid","DarkRed","DarkSalmon","DarkSeaGreen","DarkSlateBlue","DarkSlateGrey","DarkTurquoise","DarkViolet","DeepPink","DeepSkyBlue","DodgerBlue","FireBrick","ForestGreen","Fuchsia","Gold","GoldenRod","Gray","Green","GreenYellow","HotPink","IndianRed","Indigo","LawnGreen","LightBlue","LightCoral","LightGoldenRodYellow","LightGreen","LightPink","LightSalmon","LightSeaGreen","LightSkyBlue","LightSlateGrey","LightSteelBlue","Lime","LimeGreen","Magenta","Maroon","MediumAquaMarine","MediumBlue","MediumOrchid","MediumPurple","MediumSeaGreen","MediumSlateBlue","MediumSpringGreen","MediumTurquoise","MediumVioletRed","MidnightBlue","MistyRose","Moccasin","NavajoWhite","Navy","Olive","OliveDrab","Orange","OrangeRed","Orchid","PaleGoldenRod","PaleGreen","PaleTurquoise","PaleVioletRed","PapayaWhip","PeachPuff","Peru","Pink","Plum","PowderBlue","Purple","Red","RosyBrown","RoyalBlue","SaddleBrown","Salmon","SandyBrown","SeaGreen","SeaShell","Sienna","Silver","SkyBlue","SlateBlue","SpringGreen","SteelBlue","Tan","Teal","Thistle","Tomato","Turquoise","Violet","Wheat","Yellow","YellowGreen"];
+
+		//get DOM shortcuts
+		this.currentMaterialEfficiencyDOM = $('.material-efficiency-current-value');
+		this.currentWasteDOM = $('.waste-current-value');
+		this.visionMaterialEfficiencyDOM = $('.material-efficiency-vision-value');
+		this.visionWasteDOM = $('.waste-vision-value');
+		this.materialEfficiencyChangeStrDOM = $('.material-efficiency-increase-str');
+		this.wasteChangeStrDOM = $('.waste-increase-str');
+		this.materialEfficiencyChangeValueDOM = $('.material-efficiency-increase-value');
+		this.wasteChangeValueDOM = $('.waste-increase-value');
+		this.materialEfficiencyArrow = $('.material-efficiency-arrow img');
+		this.wasteArrow = $('.waste-arrow img');
+
+		this.referencePeriod = $('.reference-period-select');
+		this.line = $('.line-select');
+		this.referencePeriodValue = this.referencePeriod.val();
+		this.lineValue = this.line.val();
+
+		this.materialKPIUnit = 'LBS'; //default value[changable with 'kUSD']
+		this.materialKPIUnitButton = $('.material-kpi-unit-toggle');
+
+		this.graphicRepresentationUnit = 'LBS'; //default value [changable with 'kUSD']
+		this.graphicRepresentationUnitLbs = $('.graphic-representation-toggle-lbs');
+		this.graphicRepresentationUnitKusd = $('.graphic-representation-toggle-kusd');
+		this.graphicRepresentationFamText = $('.graphic-representation-fam-text');
+		this.graphicRepresentationFamArrow = $('.graphic-representation-fam-arrow');
+		this.graphicRepresentationCurrentDOM = $('.graphic-representation-current-text');
+		this.graphicRepresentationVisionDOM = $('.graphic-representation-vision-text');
+
+		this.referenceVisionUnit = 'LBS'; //default value [changable with 'kUSD']
+		this.referenceVisionUnitLbs = $('.reference-vision-toggle-lbs');
+		this.referenceVisionUnitKusd = $('.reference-vision-toggle-kusd');
+
+		this.paretoOption1 = $('.pareto-option-1');
+		this.paretoOption2 = $('.pareto-option-2');
+		this.paretoOption3 = $('.pareto-option-3');
+		this.paretoGraphContainer = $('.pareto-graph-canvas-container');
+
+		//set event listeners
+		this.referencePeriod.change(function() {
+			inst.onComponentChanged();
+		});
+		this.line.change(function() {
+			inst.onComponentChanged();
+		});
+
+		this.materialKPIUnitButton.click(function() {
+			if(inst.materialKPIUnit === 'LBS') {
+				inst.materialKPIUnit = 'kUSD';
+				inst.materialKPIUnitButton.text('kUSD');
+				inst.displayKPIData();
+			}
+			else {
+				inst.materialKPIUnit = 'LBS';
+				inst.materialKPIUnitButton.text('LBS');	
+				inst.displayKPIData();
+			}
+		});
+
+		this.graphicRepresentationUnitLbs.click(function() {
+			if(inst.graphicRepresentationUnit === 'kUSD') {
+				//change to LBS
+				inst.graphicRepresentationUnit = 'LBS';
+				inst.initGraphicRepresentation();
+			}
+		});
+		this.graphicRepresentationUnitKusd.click(function() {
+			if(inst.graphicRepresentationUnit === 'LBS') {
+				//change to kUSD
+				inst.graphicRepresentationUnit = 'kUSD';
+				inst.initGraphicRepresentation();
+			}
+		});
+
+		this.referenceVisionUnitLbs.click(function() {
+			if(inst.referenceVisionUnit === 'kUSD') {
+				//change to LBS
+				inst.referenceVisionUnit = 'LBS';
+				inst.initReferenceVisionGraph();
+			}
+		});
+		this.referenceVisionUnitKusd.click(function() {
+			if(inst.referenceVisionUnit === 'LBS') {
+				//change to kUSD
+				inst.referenceVisionUnit = 'kUSD';
+				inst.initReferenceVisionGraph();
+			}
+		});
+
+		this.paretoOption1.click(function() {
+			if(inst.paretoOption1.text() === 'Losses' && inst.paretoOption2.text() === 'Family') {
+				inst.paretoOption1.text('Potentials');
+				inst.initParetoGraph(inst.getParetoDataSet());
+				return;
+			}
+			if(inst.paretoOption1.text() === 'Potentials' && inst.paretoOption2.text() === 'Family') {
+				inst.paretoOption1.text('Losses');
+				inst.initParetoGraph(inst.getParetoDataSet());
+				return;
+			}
+		});
+		this.paretoOption2.click(function() {
+			if(inst.paretoOption2.text() === 'Family' && inst.paretoOption1.text() === 'Potentials') {
+				inst.paretoOption2.text('Loss');
+				inst.initParetoGraph(inst.getParetoDataSet());
+				return;
+			}
+			if(inst.paretoOption2.text() === 'Loss') {
+				inst.paretoOption2.text('Family');
+				inst.initParetoGraph(inst.getParetoDataSet());
+				return;
+			}
+		});
+		this.paretoOption3.click(function() {
+			if(inst.paretoOption3.text() === '(lbs)')
+				inst.paretoOption3.text('(kUSD)');
+			else
+				inst.paretoOption3.text('(lbs)');
+			inst.initParetoGraph(inst.getParetoDataSet());
+		});
+
+		this.initLayout();
+	};
+
+	ReportMaterial.prototype.initLayout = function() {
+		//clear existing data
+		$('input').val('');
+		$('select').find('option.data-option').remove();
+		//fetch referencePeriod
+		this.initReferencePeriod();
+		//fetch line data
+		this.initLines();
+	};
+
+	ReportMaterial.prototype.initGraphs = function() {
+		this.initGraphicRepresentation();
+		this.initReferenceVisionGraph();
+		this.initParetoGraph(this.getParetoDataSet());
+	};
+
+	ReportMaterial.prototype.initReferencePeriod = function() {
+		this.db.collection('users/' + this.userRef.uid + '/products/np002/factoryFileTypes/material/referencePeriod/').get().then(querySnapshot => {
+			querySnapshot.forEach(ref => {
+				$("<option class='data-option' value='" + ref.id + "'>").appendTo(".reference-period-select").text(ref.id);
+			});
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	ReportMaterial.prototype.initLines = function() {
+		this.db.collection('users/' + this.userRef.uid + '/products/np002/areaLayout').get().then(querySnapshot => {
+			querySnapshot.forEach(area => {
+				$("<option class='data-option' value='" + area.data().line + "'>").appendTo(".line-select").text(area.data().line);
+			});
+		}).catch(err => {
+			console.log(err);
+		});	
+	};
+
+	ReportMaterial.prototype.initParetoFamily = function() {
+		//Called after pulling familyData
+		$.each(this.materialsettings.famArr, (i, fam) => {
+			$("<option class='data-option' value='" + fam.name + "'>").appendTo(".family-select").text(fam.displayName);
+		});
+	};
+
+	ReportMaterial.prototype.calLossData = function() {
+		//pulled after pulling LossesData
+		this.lossArr = [];
+		const lossHeader = this.materialsettings.lossesHeaderArr[1].data().name;
+		$.each(this.materialsettings.lossesArr, (i, l) => {
+			this.lossArr[i] = l.data()[lossHeader];
+		});
+	};
+
+	ReportMaterial.prototype.initDataLayout = function() {
+		this.displayKPIData();
+	};
+
+	ReportMaterial.prototype.getGoodProductionTotalInLbs = function() {
+		const headerName = this.materialsettings.refPHeaderArr[1].data().name;
+		var sum = 0;
+		$.each(this.materialsettings.refPArr, (i, data) => {
+			sum += parseFloat(data.data()[headerName].replace(/,/g, ''));
+		});
+		return sum;
+	};
+
+	ReportMaterial.prototype.getGoodProductionTotalInKusd = function() {
+		const headerName = this.materialsettings.refPHeaderArr[3].data().name;
+		var sum = 0;
+		$.each(this.materialsettings.refPArr, (i, data) => {
+			sum += parseFloat(data.data()[headerName].replace(/,/g, ''));
+		});
+		return sum;
+	};
+
+	ReportMaterial.prototype.getGoodProductionTotalByLineInLbs = function() {
+		const lineHeader = this.materialsettings.refPHeaderArr[0].data().name;
+		const headerName = this.materialsettings.refPHeaderArr[1].data().name;
+		var sum = 0;
+		$.each(this.materialsettings.refPArr, (i, data) => {
+			if(data.data()[lineHeader] === this.lineValue)
+				sum += parseFloat(data.data()[headerName].replace(/,/g, ''));
+		});
+		return sum;	
+	};
+
+	ReportMaterial.prototype.getGoodProductionTotalByLineInKusd = function() {
+		const lineHeader = this.materialsettings.refPHeaderArr[0].data().name;
+		const headerName = this.materialsettings.refPHeaderArr[3].data().name;
+		var sum = 0;
+		$.each(this.materialsettings.refPArr, (i, data) => {
+			if(data.data()[lineHeader] === this.lineValue)
+				sum += parseFloat(data.data()[headerName].replace(/,/g, ''));
+		});
+		return sum;	
+	};
+
+	//WASTE
+
+	ReportMaterial.prototype.getWasteTotalInLbs = function() {
+		const headerName = this.materialsettings.refPHeaderArr[2].data().name;
+		var sum = 0;
+		$.each(this.materialsettings.refPArr, (i, data) => {
+			sum += parseFloat(data.data()[headerName].replace(/,/g, ''));
+		});
+		return sum;
+	};
+
+	ReportMaterial.prototype.getWasteTotalInKusd = function() {
+		const headerName = this.materialsettings.refPHeaderArr[4].data().name;
+		var sum = 0;
+		$.each(this.materialsettings.refPArr, (i, data) => {
+			sum += parseFloat(data.data()[headerName].replace(/,/g, ''));
+		});
+		return sum;
+	};
+
+	ReportMaterial.prototype.getWasteTotalByLineInLbs = function() {
+		const lineHeader = this.materialsettings.refPHeaderArr[0].data().name;
+		const headerName = this.materialsettings.refPHeaderArr[2].data().name;
+		var sum = 0;
+		$.each(this.materialsettings.refPArr, (i, data) => {
+			if(data.data()[lineHeader] === this.lineValue)
+				sum += parseFloat(data.data()[headerName].replace(/,/g, ''));
+		});
+		return sum;	
+	};
+
+	ReportMaterial.prototype.getWasteTotalByLineInKusd = function() {
+		const lineHeader = this.materialsettings.refPHeaderArr[0].data().name;
+		const headerName = this.materialsettings.refPHeaderArr[4].data().name;
+		var sum = 0;
+		$.each(this.materialsettings.refPArr, (i, data) => {
+			if(data.data()[lineHeader] === this.lineValue)
+				sum += parseFloat(data.data()[headerName].replace(/,/g, ''));
+		});
+		return sum;	
+	};
+
+	ReportMaterial.prototype.getMatEffCurrent = function() {
+		if(this.materialKPIUnit === 'LBS') 
+			return this.getMatEffCurrentInLbs();
+		return this.getMatEffCurrentInKusd();
+	};
+
+	ReportMaterial.prototype.getWasteCurrent = function() {
+		if(this.materialKPIUnit === 'LBS')
+			return this.getWasteCurrentInLbs();
+		return this.getWasteCurrentInKusd();
+	};
+
+	ReportMaterial.prototype.getMatEffVision = function() {
+		if(this.materialKPIUnit === 'LBS') 
+			return this.getMatEffVisionInLbs();
+		return this.getMatEffVisionInKusd();
+	};
+
+	ReportMaterial.prototype.getWasteVision = function() {
+		if(this.materialKPIUnit === 'LBS')
+			return this.getWasteVisionInLbs();
+		return this.getWasteVisionInKusd();
+	};
+
+	ReportMaterial.prototype.getMatEffCurrentInLbs = function() {
+		//MatEff = (refP[id = 0] / (refP[id = 0] + refP[id = 1])) * 100;
+		//return ((this.materialsettings.refPArr[0].value / (this.materialsettings.refPArr[0].value + this.materialsettings.refPArr[1].value)) * 100);
+		var goodProductionTotal, wasteTotal;
+		if(this.lineValue == 0) {
+			//all lines
+			goodProductionTotal = this.getGoodProductionTotalInLbs();
+			wasteTotal = this.getWasteTotalInLbs();
+		}
+		else {
+			//by line
+			goodProductionTotal = this.getGoodProductionTotalByLineInLbs();
+			wasteTotal = this.getWasteTotalByLineInLbs();
+		}
+		if(goodProductionTotal === 0)
+			return 0;
+		return (goodProductionTotal / (goodProductionTotal + wasteTotal) * 100);
+	};
+
+	ReportMaterial.prototype.getMatEffCurrentInKusd = function() {
+		//MatEff = (refP[id = 0] / (refP[id = 0] + refP[id = 1])) * 100;
+		//return ((this.materialsettings.refPArr[0].value / (this.materialsettings.refPArr[0].value + this.materialsettings.refPArr[1].value)) * 100);
+		var goodProductionTotal, wasteTotal;
+		if(this.lineValue == 0) {
+			//all lines
+			goodProductionTotal = this.getGoodProductionTotalInKusd();
+			wasteTotal = this.getWasteTotalInKusd();
+		}
+		else {
+			//by line
+			goodProductionTotal = this.getGoodProductionTotalByLineInKusd();
+			wasteTotal = this.getWasteTotalByLineInKusd();
+		}
+		if(goodProductionTotal === 0)
+			return 0;
+		return (goodProductionTotal / (goodProductionTotal + wasteTotal) * 100);
+	};
+
+	ReportMaterial.prototype.getWasteCurrentInLbs = function() {
+		//MatEff = (refP[id = 1] / (refP[id = 0] + refP[id = 1])) * 100;
+		//return ((this.materialsettings.refPArr[1].value / (this.materialsettings.refPArr[0].value + this.materialsettings.refPArr[1].value)) * 100);
+		var goodProductionTotal, wasteTotal;
+		if(this.lineValue == 0) {
+			//all lines
+			goodProductionTotal = this.getGoodProductionTotalInLbs();
+			wasteTotal = this.getWasteTotalInLbs();
+		}
+		else {
+			//by line
+			goodProductionTotal = this.getGoodProductionTotalByLineInLbs();
+			wasteTotal = this.getWasteTotalByLineInLbs();
+		}
+		if(wasteTotal === 0)
+			return 0;
+		return (wasteTotal / (goodProductionTotal + wasteTotal) * 100);
+	};
+
+	ReportMaterial.prototype.getWasteCurrentInKusd = function() {
+		//MatEff = (refP[id = 1] / (refP[id = 0] + refP[id = 1])) * 100;
+		//return ((this.materialsettings.refPArr[1].value / (this.materialsettings.refPArr[0].value + this.materialsettings.refPArr[1].value)) * 100);
+		var goodProductionTotal, wasteTotal;
+		if(this.lineValue == 0) {
+			//all lines
+			goodProductionTotal = this.getGoodProductionTotalInKusd();
+			wasteTotal = this.getWasteTotalInKusd();
+		}
+		else {
+			//by line
+			goodProductionTotal = this.getGoodProductionTotalByLineInKusd();
+			wasteTotal = this.getWasteTotalByLineInKusd();
+		}
+		if(wasteTotal === 0)
+			return 0;
+		return (wasteTotal / (goodProductionTotal + wasteTotal) * 100);
+	};
+
+	ReportMaterial.prototype.getMatEffVisionInLbs = function() {
+		//MatEff = afterVision[id = 0] / (afterVision[id = 0] + afterVision[id = 1])) * 100;
+		//return ((this.afterVisionArr[0].value / (this.afterVisionArr[0].value + this.afterVisionArr[1].value)) * 100);
+		var goodProductionTotal, potentialsTotal;
+		if(this.lineValue == 0) {
+			//all lines
+			goodProductionTotal = this.getGoodProductionTotalInLbs();
+			potentialsTotal = this.getPotentialsTotalInLbs();
+		}
+		else {
+			//by line
+			goodProductionTotal = this.getGoodProductionTotalByLineInLbs();
+			potentialsTotal = this.getPotentialsTotalByLineInLbs();
+		}
+		if(goodProductionTotal === 0)
+			return 0;
+		return (goodProductionTotal / (goodProductionTotal + potentialsTotal) * 100);
+	};
+
+	ReportMaterial.prototype.getMatEffVisionInKusd = function() {
+		//MatEff = afterVision[id = 0] / (afterVision[id = 0] + afterVision[id = 1])) * 100;
+		//return ((this.afterVisionArr[0].value / (this.afterVisionArr[0].value + this.afterVisionArr[1].value)) * 100);
+		var goodProductionTotal, potentialsTotal;
+		if(this.lineValue == 0) {
+			//all lines
+			goodProductionTotal = this.getGoodProductionTotalInKusd();
+			potentialsTotal = this.getPotentialsTotalInKusd();
+		}
+		else {
+			//by line
+			goodProductionTotal = this.getGoodProductionTotalByLineInKusd();
+			potentialsTotal = this.getPotentialsTotalByLineInKusd();
+		}
+		if(goodProductionTotal === 0)
+			return 0;
+		return (goodProductionTotal / (goodProductionTotal + potentialsTotal) * 100);
+	};
+
+	ReportMaterial.prototype.getWasteVisionInLbs = function() {
+		//waste = afterVision[id = 1] / (afterVision[id = 0] + afterVision[id = 1])) * 100;
+		//return ((this.afterVisionArr[1].value / (this.afterVisionArr[0].value + this.afterVisionArr[1].value)) * 100);
+		var goodProductionTotal, potentialsTotal;
+		if(this.lineValue == 0) {
+			//all lines
+			goodProductionTotal = this.getGoodProductionTotalInLbs();
+			potentialsTotal = this.getPotentialsTotalInLbs();
+		}
+		else {
+			//by line
+			goodProductionTotal = this.getGoodProductionTotalByLineInLbs();
+			potentialsTotal = this.getPotentialsTotalByLineInLbs();
+		}
+		if(potentialsTotal === 0)
+			return 0;
+		return (potentialsTotal / (potentialsTotal + goodProductionTotal) * 100);
+	};
+
+	ReportMaterial.prototype.getWasteVisionInKusd = function() {
+		//waste = afterVision[id = 1] / (afterVision[id = 0] + afterVision[id = 1])) * 100;
+		//return ((this.afterVisionArr[1].value / (this.afterVisionArr[0].value + this.afterVisionArr[1].value)) * 100);
+		var goodProductionTotal, potentialsTotal;
+		if(this.lineValue == 0) {
+			//all lines
+			goodProductionTotal = this.getGoodProductionTotalInKusd();
+			potentialsTotal = this.getPotentialsTotalInKusd();
+		}
+		else {
+			//by line
+			goodProductionTotal = this.getGoodProductionTotalByLineInKusd();
+			potentialsTotal = this.getPotentialsTotalByLineInKusd();
+		}
+		if(potentialsTotal === 0)
+			return 0;
+		return (potentialsTotal / (potentialsTotal + goodProductionTotal) * 100);
+	};
+
+	ReportMaterial.prototype.getLossesTotalInLbs = function() {
+		//lbs total = lossesHeaderArr(id = 5)
+		var sum = 0;
+		const headerName = this.materialsettings.lossesHeaderArr[5].data().name;
+		for(var i = 0; i < this.materialsettings.lossesArr.length; i++)
+			sum += parseFloat(this.materialsettings.lossesArr[i].data()[headerName].replace(/,/g, ''));
+		return sum;
+	};
+
+	//By line
+	ReportMaterial.prototype.getLossesTotalByLineInLbs = function() {
+		//lbs total = lossesHeaderArr(id = 5)
+		var sum = 0;
+		const headerName = this.materialsettings.lossesHeaderArr[5].data().name;
+		const lineHeader = this.materialsettings.lossesHeaderArr[0].data().name;
+		for(var i = 0; i < this.materialsettings.lossesArr.length; i++) {
+			if(this.materialsettings.lossesArr[i].data()[lineHeader] === this.lineValue)
+				sum += parseFloat(this.materialsettings.lossesArr[i].data()[headerName].replace(/,/g, ''));
+		}
+		return sum;
+	};
+
+	ReportMaterial.prototype.getLossesTotalInKusd = function() {
+		//kUSD total = lossesHeaderArr.headersArr(id = 8)
+		var sum = 0;
+		const headerName = this.materialsettings.lossesHeaderArr[8].data().name;
+		for(var i = 0; i < this.materialsettings.lossesArr.length; i++)
+			sum += parseFloat(this.materialsettings.lossesArr[i].data()[headerName].replace(/,/g, ''));
+		return sum;
+	};
+
+	//By line
+	ReportMaterial.prototype.getLossesTotalByLineInKusd = function() {
+		//kUSD total = lossesHeaderArr(id = 8)
+		var sum = 0;
+		const headerName = this.materialsettings.lossesHeaderArr[8].data().name;
+		const lineHeader = this.materialsettings.lossesHeaderArr[0].data().name;
+		for(var i = 0; i < this.materialsettings.lossesArr.length; i++) {
+			if(this.materialsettings.lossesArr[i].data()[lineHeader] === this.lineValue)
+				sum += parseFloat(this.materialsettings.lossesArr[i].data()[headerName].replace(/,/g, ''));
+		}
+		return sum;
+	};
+
+	ReportMaterial.prototype.getPotentialsTotalInLbs = function() {
+		//lbs total = lossesHeaderArr(id = 5)
+		var sum = 0;
+		for(var i = 0; i < this.materialsettings.lbsPotentialsArr.length; i++) {
+			sum += (this.materialsettings.lbsPotentialsArr[i].value);
+		}
+		return sum;
+	};
+
+	//By line
+	ReportMaterial.prototype.getPotentialsTotalByLineInLbs = function() {
+		//lbs total = potentialsHeaderArr(id = 1)
+		var sum = 0;
+		for(var i = 0; i < this.materialsettings.lbsPotentialsArr.length; i++) {
+			if(this.materialsettings.lbsPotentialsArr[i].line === this.lineValue)
+				sum += (this.materialsettings.lbsPotentialsArr[i].value);
+		}
+		return sum;
+	};
+
+	ReportMaterial.prototype.getPotentialsTotalInKusd = function() {
+		//kUSD total = potentialsHeaderArr(id = 4)
+		var sum = 0;
+		for(var i = 0; i < this.materialsettings.kUSDPotentialsArr.length; i++)
+			sum += (this.materialsettings.kUSDPotentialsArr[i].value);
+		return sum;
+	};
+
+	//By line
+	ReportMaterial.prototype.getPotentialsTotalByLineInKusd = function() {
+		//kUSD total = potentialsHeaderArr(id = 4)
+		var sum = 0;
+		for(var i = 0; i < this.materialsettings.kUSDPotentialsArr.length; i++) {
+			if(this.materialsettings.kUSDPotentialsArr[i].line === this.lineValue)
+				sum += (this.materialsettings.kUSDPotentialsArr[i].value);
+		}
+		return sum;
+	};
+
+	ReportMaterial.prototype.getLossesTotalByFamilyInLbs = function() {
+		//lbs total = lossesHeaderArr(id = 5)
+		const lbsHeaderName = this.materialsettings.lossesHeaderArr[5].data().name;
+		const famHeaderName = this.materialsettings.lossesHeaderArr[2].data().name;
+		var familyName;
+		var sum = [];
+		//Initialize sum with familyName as index
+		for(var i = 0; i < this.materialsettings.famArr.length; i++) {
+			familyName = this.materialsettings.famArr[i].name;
+			sum[familyName] = 0;
+			for(var j = 0; j < this.materialsettings.lossesArr.length; j++) {
+				if(this.materialsettings.lossesArr[j].data()[famHeaderName] !== undefined) {
+					if(familyName === this.materialsettings.lossesArr[j].data()[famHeaderName].toLowerCase()) {
+						sum[familyName] += parseFloat(this.materialsettings.lossesArr[j].data()[lbsHeaderName].replace(/,/g, ''));
+					}
+				}
+			}
+		}
+		return sum;
+	};
+
+	//By line
+	ReportMaterial.prototype.getLossesTotalByLineByFamilyInLbs = function() {
+		//lbs total = lossesHeaderArr(id = 5)
+		const lbsHeaderName = this.materialsettings.lossesHeaderArr[5].data().name;
+		const famHeaderName = this.materialsettings.lossesHeaderArr[2].data().name;
+		const lineHeader = this.materialsettings.lossesHeaderArr[0].data().name;
+		var familyName;
+		var sum = [];
+		for(var i = 0; i < this.materialsettings.famArr.length; i++) {
+			familyName = this.materialsettings.famArr[i].name;
+			sum[familyName] = 0;
+			for(var j = 0; j < this.materialsettings.lossesArr.length; j++) {
+				if(this.materialsettings.lossesArr[j].data()[famHeaderName] !== undefined || this.materialsettings.lossesArr[j].data()[lineHeader] !== undefined) {
+					if(this.materialsettings.lossesArr[j].data()[lineHeader] === this.lineValue && familyName === this.materialsettings.lossesArr[j].data()[famHeaderName].toLowerCase()) {
+						sum[familyName] += parseFloat(this.materialsettings.lossesArr[j].data()[lbsHeaderName].replace(/,/g, ''));
+					}
+				}
+			}
+		}
+		return sum;
+	};
+
+	ReportMaterial.prototype.getLossesTotalByFamilyInKusd = function() {
+		//kUSD total = lossesHeaderArr(id = 8)
+		const kusdHeaderName = this.materialsettings.lossesHeaderArr[8].data().name;
+		const famHeaderName = this.materialsettings.lossesHeaderArr[2].data().name;
+		var familyName;
+		var sum = [];
+		for(var i = 0; i < this.materialsettings.famArr.length; i++) {
+			familyName = this.materialsettings.famArr[i].name;
+			sum[familyName] = 0;
+			for(var j = 0; j < this.materialsettings.lossesArr.length; j++) {
+				if(this.materialsettings.lossesArr[j].data()[famHeaderName] !== undefined) {
+					if(familyName === this.materialsettings.lossesArr[j].data()[famHeaderName].toLowerCase()) {
+						sum[familyName] += parseFloat(this.materialsettings.lossesArr[j].data()[kusdHeaderName].replace(/,/g, ''));
+					}
+				}
+			}
+		}
+		return sum;
+	};
+
+	//By line
+	ReportMaterial.prototype.getLossesTotalByLineByFamilyInKusd = function() {
+		//kUSD total = lossesHeaderArr(id = 8)
+		const kusdHeaderName = this.materialsettings.lossesHeaderArr[8].data().name;
+		const famHeaderName = this.materialsettings.lossesHeaderArr[2].data().name;
+		const lineHeader = this.materialsettings.lossesHeaderArr[0].data().name;
+		var familyName;
+		var sum = [];
+		for(var i = 0; i < this.materialsettings.famArr.length; i++) {
+			familyName = this.materialsettings.famArr[i].name;
+			sum[familyName] = 0;
+			for(var j = 0; j < this.materialsettings.lossesArr.length; j++) {
+				if(this.materialsettings.lossesArr[j].data()[famHeaderName] !== undefined || this.materialsettings.lossesArr[j].data()[lineHeader] !== undefined) {
+					if(this.materialsettings.lossesArr[j].data()[lineHeader] === this.lineValue && familyName === this.materialsettings.lossesArr[j].data()[famHeaderName].toLowerCase()) {
+						sum[familyName] += parseFloat(this.materialsettings.lossesArr[j].data()[kusdHeaderName].replace(/,/g, ''));
+					}
+				}
+			}
+		}
+		return sum;
+	};
+
+	ReportMaterial.prototype.getPotentialsTotalByFamilyInLbs = function() {
+		//lbs total = potentialsHeaderArr(id = 1)
+		const famHeaderName = this.materialsettings.lossesHeaderArr[2].data().name;
+		var familyName;
+		var sum = [];
+		for(var i = 0; i < this.materialsettings.famArr.length; i++) {
+			familyName = this.materialsettings.famArr[i].name;
+			sum[familyName] = 0;
+			for(var j = 0; j < this.materialsettings.lbsPotentialsArr.length; j++) {
+				if(familyName === this.materialsettings.lossesArr[j].data()[famHeaderName]) {
+					sum[familyName] += parseFloat(this.materialsettings.lbsPotentialsArr[j].value);
+				}
+			}
+		}
+		return sum;
+	};
+
+	//By line
+	ReportMaterial.prototype.getPotentialsTotalByLineByFamilyInLbs = function() {
+		//lbs total = potentialsHeaderArr(id = 1)
+		const famHeaderName = this.materialsettings.lossesHeaderArr[2].data().name;
+		const lineHeader = this.materialsettings.lossesHeaderArr[0].data().name;
+		var familyName;
+		var sum = [];
+		for(var i = 0; i < this.materialsettings.famArr.length; i++) {
+			familyName = this.materialsettings.famArr[i].name;
+			sum[familyName] = 0;
+			for(var j = 0; j < this.materialsettings.lbsPotentialsArr.length; j++) {
+				if(this.materialsettings.lbsPotentialsArr[j].line === this.lineValue && familyName === this.materialsettings.lossesArr[j][famHeaderName]) {
+					sum[i] += parseFloat(this.materialsettings.lbsPotentialsArr[j].value);
+				}
+			}
+		}
+		return sum;
+	};
+
+	ReportMaterial.prototype.getPotentialsTotalByFamilyInKusd = function() {
+		//kUSD total = potentialsHeaderArr(id = 4)
+		const famHeaderName = this.materialsettings.lossesHeaderArr[2].name;
+		var familyName;
+		var sum = [];
+		for(var i = 0; i < this.materialsettings.famArr.length; i++) {
+			familyName = this.materialsettings.famArr[i].name;
+			sum[familyName] = 0;
+			for(var j = 0; j < this.materialsettings.kUSDPotentialsArr.length; j++) {
+				if(familyName === this.materialsettings.lossesArr[j][famHeaderName]) {
+					sum[familyName] += parseFloat(this.materialsettings.kUSDPotentialsArr[j].value);
+				}
+			}
+		}
+		return sum;
+	};
+
+	//By line
+	ReportMaterial.prototype.getPotentialsTotalByLineByFamilyInKusd = function() {
+		//kUSD total = potentialsHeaderArr(id = 4)
+		const famHeaderName = this.materialsettings.lossesHeaderArr[2].name;
+		const lineHeader = this.materialsettings.lossesHeaderArr[0].name;
+		var familyName;
+		var sum = [];
+		for(var i = 0; i < this.materialsettings.famArr.length; i++) {
+			familyName = this.materialsettings.famArr[i].name;
+			sum[familyName] = 0;
+			for(var j = 0; j < this.materialsettings.kUSDPotentialsArr.length; j++) {
+				if(this.materialsettings.kUSDPotentialsArr[j].line === this.lineValue && familyName === this.materialsettings.lossesArr[j][famHeaderName]) {
+					sum[i] += parseFloat(this.materialsettings.kUSDPotentialsArr[j].value);
+				}
+			}
+		}
+		return sum;
+	};
+
+	ReportMaterial.prototype.getPotentialsTotalByLossInLbs = function() {
+		//lbs total = potentialsHeaderArr(id = 1)
+		const lossHeaderName = this.materialsettings.lossesHeaderArr[1].data().name;
+		var lossName;
+		var sum = [];
+		for(var i = 0; i < this.lossArr.length; i++) {
+			lossName = this.lossArr[i];
+			sum[lossName] = 0;
+			for(var j = 0; j < this.materialsettings.lbsPotentialsArr.length; j++) {
+				if(lossName === this.materialsettings.lossesArr[j].data()[lossHeaderName]) {
+					sum[lossName] += parseFloat(this.materialsettings.lbsPotentialsArr[j].value);
+				}
+			}
+		}
+		return sum;
+	};
+
+	//By line
+	ReportMaterial.prototype.getPotentialsTotalByLineByLossInLbs = function() {
+		//lbs total = potentialsHeaderArr(id = 1)
+		const lossHeaderName = this.materialsettings.lossesHeaderArr[1].name;
+		const lineHeader = this.materialsettings.lossesHeaderArr[0].name;
+		var lossName;
+		var sum = [];
+		for(var i = 0; i < this.lossArr.length; i++) {
+			lossName = this.lossArr[i];
+			sum[lossName] = 0;
+			for(var j = 0; j < this.materialsettings.lbsPotentialsArr.length; j++) {
+				if(this.materialsettings.lbsPotentialsArr[j].line === this.lineValue && lossName === this.materialsettings.lossesArr[j][lossHeaderName]) {
+					sum[i] += parseFloat(this.materialsettings.lbsPotentialsArr[j].value);
+				}
+			}
+		}
+		return sum;
+	};
+
+	ReportMaterial.prototype.getPotentialsTotalByLossInKusd = function() {
+		//kUSD total = potentialsHeaderArr(id = 4)
+		const lossHeaderName = this.materialsettings.lossesHeaderArr[1].name;
+		var lossName;
+		var sum = [];
+		for(var i = 0; i < this.lossArr.length; i++) {
+			lossName = this.lossArr[i];
+			sum[lossName] = 0;
+			for(var j = 0; j < this.materialsettings.kUSDPotentialsArr.length; j++) {
+				if(lossName === this.materialsettings.lossesArr[j][lossHeaderName]) {
+					sum[lossName] += parseFloat(this.materialsettings.kUSDPotentialsArr.value);
+				}
+			}
+		}
+		return sum;
+	};
+
+	//By line
+	ReportMaterial.prototype.getPotentialsTotalByLineByLossInKusd = function() {
+		//kUSD total = potentialsHeaderArr(id = 4)
+		const lossHeaderName = this.materialsettings.lossesHeaderArr[1].name;
+		const lineHeader = this.materialsettings.lossesHeaderArr.headersArr[0].name;
+		var lossName;
+		var sum = [];
+		for(var i = 0; i < this.lossArr.length; i++) {
+			lossName = this.lossArr[i];
+			sum[lossName] = 0;
+			for(var j = 0; j < this.materialsettings.kUSDPotentialsArr.length; j++) {
+				if(this.materialsettings.kUSDPotentialsArr[j].line === this.lineValue && lossName === this.materialsettings.lossesArr[j][lossHeaderName]) {
+					sum[i] += parseFloat(this.materialsettings.kUSDPotentialsArr.value);
+				}
+			}
+		}
+		return sum;
+	};
+
+	ReportMaterial.prototype.displayKPIData = function() {
+		//get current matEff and current waste
+		const matEffCurrent = this.getMatEffCurrent();
+		const wasteCurrent = this.getWasteCurrent();
+		//display matEff and waste current
+		this.displayMatEffCurrent(matEffCurrent.toFixed(2));
+		this.displayWasteCurrent(wasteCurrent.toFixed(2));
+		//get vision matEff and vision waste
+		const matEffVision = this.getMatEffVision();
+		const wasteVision = this.getWasteVision();
+		//display matEff and wasteVision
+		this.displayMatEffVision(matEffVision.toFixed(2))
+		this.displayWasteVision(wasteVision.toFixed(2));
+		//display change matEff and change waste
+		this.displayMatEffChange(matEffCurrent, matEffVision);
+		this.displayWasteChange(wasteCurrent, wasteVision);
+	};
+
+	ReportMaterial.prototype.displayMatEffCurrent = function(matEff) {
+		this.currentMaterialEfficiencyDOM.text(matEff + '%');
+	};
+
+	ReportMaterial.prototype.displayWasteCurrent = function(waste) {
+		this.currentWasteDOM.text(waste + '%');
+	};
+
+	ReportMaterial.prototype.displayMatEffVision = function(matEff) {
+		this.visionMaterialEfficiencyDOM.text(matEff + '%');
+	};
+
+	ReportMaterial.prototype.displayWasteVision = function(waste) {
+		this.visionWasteDOM.text(waste + '%');
+	};
+
+	ReportMaterial.prototype.displayMatEffChange = function(matEffCurrent, matEffVision) {
+		var change;
+		if(matEffVision >= matEffCurrent) {
+			change = (matEffVision - matEffCurrent).toFixed(2);
+			this.materialEfficiencyChangeStrDOM.text('Increase');
+			this.materialEfficiencyArrow.attr('src','resources/up_arrow_green.png');
+		}
+		else {
+			change = (matEffCurrent - matEffVision).toFixed(2);
+			this.materialEfficiencyChangeStrDOM.text('Decrease');
+			this.materialEfficiencyArrow.attr('src','resources/down_arrow_red.png');
+		}
+		this.materialEfficiencyChangeValueDOM.text(change + '%')
+	};
+
+	ReportMaterial.prototype.displayWasteChange = function(wasteCurrent, wasteVision) {
+		var change;
+		if(wasteVision >= wasteCurrent) {
+			change = (wasteVision - wasteCurrent).toFixed(2);
+			this.wasteChangeStrDOM.text('Increase');
+			this.wasteArrow.attr('src','resources/up_arrow_red.png');
+		}
+		else {
+			change = (wasteCurrent - wasteVision).toFixed(2);
+			this.wasteChangeStrDOM.text('Decrease');
+			this.wasteArrow.attr('src','resources/down_arrow_green.png');
+		}
+		this.wasteChangeValueDOM.text(change + '%');
+	};
+
+	ReportMaterial.prototype.initGraphicRepresentation = function() {
+		//get losses total by family
+		var sumOfFam, kpiCurrentTotal, kpiVisionTotal;
+		if(this.graphicRepresentationUnit === 'LBS') {
+			sumOfFam = this.getLossesTotalByFamilyInLbs();
+			kpiCurrentTotal = this.getGoodProductionTotalInLbs() + this.getWasteTotalInLbs();
+			kpiVisionTotal = this.getGoodProductionTotalInLbs() + this.getPotentialsTotalInLbs();
+
+			$.each(this.materialsettings.famArr, (i, family) => {
+				//get html dom for the family
+				this.graphicRepresentationFamText.filter("[data-fam='" + family.name + "']").html(sumOfFam[family.name].toFixed(2) + '&nbsp;Tons');
+				this.graphicRepresentationFamArrow.filter("[data-fam='" + family.name + "']").attr('fill', family.color);
+			});
+			this.graphicRepresentationCurrentDOM.html(kpiCurrentTotal + '&nbsp;Tons');
+			this.graphicRepresentationVisionDOM.html(kpiVisionTotal + '&nbsp;Tons');
+		}
+		else {
+			sumOfFam = this.getLossesTotalByFamilyInKusd();
+			kpiCurrentTotal = this.getGoodProductionTotalInKusd() + this.getWasteTotalInKusd();
+			kpiVisionTotal = this.getGoodProductionTotalInKusd() + this.getPotentialsTotalInKusd();
+
+			$.each(this.materialsettings.famArr, (i, family) => {
+				//get html dom for the family
+				this.graphicRepresentationFamText.filter("[data-fam='" + family.name + "']").html(sumOfFam[family.name].toFixed(2) + '&nbsp;kUSD');
+				this.graphicRepresentationFamArrow.filter("[data-fam='" + family.name + "']").attr('fill', family.color);
+			});
+			this.graphicRepresentationCurrentDOM.html(kpiCurrentTotal + '&nbsp;kUSD');
+			this.graphicRepresentationVisionDOM.html(kpiVisionTotal + '&nbsp;kUSD');
+		}
+	};
+
+	ReportMaterial.prototype.initReferenceVisionGraph = function() {
+		const inst = this;
+		const canvas = $('.reference-vision-graph-canvas');
+		canvas.remove() //TO CLEAR THE CANVAS
+		$("<canvas class='reference-vision-graph-canvas graph-canvas'>").appendTo('.reference-vision-graph-canvas-container')
+		const ctx = document.getElementsByClassName("reference-vision-graph-canvas")[0].getContext('2d');
+		const gradientLine = ctx.createLinearGradient(0, 0, 0, 100); 
+    	gradientLine.addColorStop(0, 'rgba(0, 119, 255, 1)');
+    	gradientLine.addColorStop(1, 'rgba(0, 242, 254, 1)');
+    	var lossesTotal, potentialsTotal;
+    	if(this.referenceVisionUnit === 'LBS') {
+    		lossesTotal = this.getLossesTotalInLbs();
+    		potentialsTotal = this.getPotentialsTotalInLbs();
+    	}
+    	else {
+    		lossesTotal = this.getLossesTotalInKusd();
+    		potentialsTotal = this.getPotentialsTotalInKusd();
+    	}
+    	var stepSize;
+    	if(lossesTotal > 99)
+    		stepSize = lossesTotal / 8;
+    	else
+    		stepSize = null;
+		const chart = new Chart(ctx, {
+			type : 'bar',
+			data : {
+				labels : ['Reference', 'Vision'],
+				datasets : [{
+					label : [''],
+					data : [potentialsTotal, lossesTotal],
+					borderColor : gradientLine,
+					pointBackgroundColor : 'rgba(255,255,255,1)',
+					pointBorderColor : 'rgba(245,245,245,1)',
+					pointHoverBackgroundColor : 'rgba(255,255,255,1)',
+					pointHoverBorderColor : 'rgba(235,235,235,1)',
+					pointRadius : 4,
+					pointHoverRadius : 5,
+					fill : false,
+					type : 'line'
+				},
+				{
+					label : [''],
+					data : [lossesTotal,potentialsTotal],
+					backgroundColor : [
+						'rgba(52,58,64,1)',
+						'rgba(52,58,64,1)'
+					],
+					borderColor : [
+						'rgba(52,58,64,1)',
+						'rgba(52,58,64,1)'
+					],
+					borderWidth : 1.5,
+				},
+				{
+					label : [''],
+					data : [0, (lossesTotal - potentialsTotal)],
+					backgroundColor : [
+						'rgba(92,98,104,1)',
+						'rgba(92,98,104,1)'
+					],
+					borderColor : [
+						'rgba(92,98,104,1)',
+						'rgba(92,98,104,1)'
+					],
+					borderWidth : 1.5,
+				}]
+			},
+			options: {
+				responsive : true,
+				maintainAspectRatio : false,
+				showAllTooltips: true, 
+				legend : { display : false },
+        		scales : {
+    				xAxes: [{
+    					stacked : true,
+    					ticks : {
+    						fontColor : '#696969',
+    						fontSize : 9
+    					},
+                		gridLines: {
+                    		display:false,
+                    		drawBorder : false
+                		}
+            		}],
+    				yAxes: [{
+    					stacked : true,
+    					ticks : {
+    						display : true,
+    						stepSize : stepSize,
+    						fontSize : 8,
+    					},
+                		gridLines: {
+                			display : true,
+                			drawBorder : false,
+                		}   
+            		}]
+    			},
+    			tooltips : {
+    				yAlign : 'bottom',
+    				titleFontSize : 0,
+    				backgroundColor : 'rgba(0,0,0,0)',
+    				bodyFontColor : '#000',
+    				bodyFontSize : 0,
+    				bodyFontStyle : 'bold',
+    				footerFontColor : '#000',
+    				displayColors : false
+    			},
+    		}
+		});
+	};
+
+	ReportMaterial.prototype.initParetoGraph = function(dataArr) {
+		const inst = this;
+		const canvas = $('.pareto-graph-canvas');
+		canvas.remove() //TO CLEAR THE CANVAS
+		$("<canvas class='pareto-graph-canvas'>").appendTo('.pareto-graph-canvas-container')
+		const ctx = document.getElementsByClassName("pareto-graph-canvas")[0].getContext('2d');
+		ctx.canvas.height = 380;
+		var dataNameArr = [], dataColorArr = [];
+		if(this.paretoOption2.text() === 'Family') {
+			dataNameArr = this.materialsettings.famArr.map(a => a.name.toUpperCase());
+			dataColorArr = this.materialsettings.famArr.map(b => b.color); 
+		}
+		else {
+			dataNameArr = this.lossArr;
+			const colors = this.getColors(dataNameArr.length)
+			//for(var i = 0; i < colors.length; i++)
+			//	dataColorArr[i] = 'rgb(' + colors[i].r + ',' + colors[i].g + ',' + colors[i].b + ')';
+			dataColorArr = colors;
+		}
+		//convert dataArr array
+		const newDataArr = [], newLabelArr = [];
+		var i = 0, maxValue = 0;
+		for(var key in dataArr) {
+			newDataArr[i] = dataArr[key];
+			newLabelArr[i++] = key;
+			if(maxValue < dataArr[key])
+				maxValue = dataArr[key];
+		}
+
+		const chart = new Chart(ctx, {
+			type : 'bar',
+			data : {
+				labels : newLabelArr,
+				datasets : [{
+					label : inst.paretoUnit,
+					data : newDataArr,
+					backgroundColor : dataColorArr,
+					hoverBackgroundColor : dataColorArr,
+					borderColor : dataColorArr,
+					hoverBorderColor : '#777',
+					borderWidth : 1,
+				}]
+			},
+			options: {
+				responsive : true,
+				maintainAspectRatio : false,
+				showAllTooltips: false, 
+				legend : { display : false },
+        		scales : {
+    				xAxes: [{
+    					stacked : true,
+    					ticks : {
+    						fontColor : '#696969',
+    						fontSize : 5,
+    						autoSkip : false
+    					},
+                		gridLines: {
+                    		display:false,
+                    		drawBorder : false
+                		}
+            		}],
+    				yAxes: [{
+    					stacked : true,
+    					ticks : {
+    						display : true,
+    						stepSize : (maxValue / 4),
+    						max : (maxValue + parseInt(maxValue / 4)),
+    						fontSize : 8,
+    					},
+                		gridLines: {
+                			display : true,
+                			drawBorder : true,
+                		}   
+            		}]
+    			},
+    			tooltips : {
+    				yAlign : 'bottom',
+    				titleFontSize : 8,
+    				backgroundColor : 'rgba(0,0,0,0.4)',
+    				bodyFontColor : '#fff',
+    				bodyFontSize : 8,
+    				bodyFontStyle : 'light'
+    			},
+    		}
+		});
+	};
+
+	ReportMaterial.prototype.getParetoLossesByFamilyInLbs = function() {
+		return this.getLossesTotalByFamilyInLbs();
+	};
+
+	ReportMaterial.prototype.getParetoLossesByFamilyInKusd = function() {
+		return this.getLossesTotalByFamilyInKusd();
+	};
+
+	ReportMaterial.prototype.getParetoPotentialsByFamilyInLbs = function() {
+		return this.getPotentialsTotalByFamilyInLbs();
+	};
+
+	ReportMaterial.prototype.getParetoPotentialsByFamilyInKusd = function() {
+		return this.getPotentialsTotalByFamilyInKusd();
+	};
+
+	ReportMaterial.prototype.getParetoPotentialsByLossInLbs = function() {
+		return this.getPotentialsTotalByLossInLbs();
+	};
+
+	ReportMaterial.prototype.getParetoPotentialsByLossInKusd = function() {
+		return this.getPotentialsTotalByLossInKusd();
+	};
+
+	ReportMaterial.prototype.getParetoDataSet = function() {
+		if(this.paretoOption1.text() === 'Losses') {
+			//paretoOption2 in this case will always be 'Family'
+			if(this.paretoOption3.text() === '(lbs)') {
+				this.paretoUnit = 'lbs';
+				return this.getParetoLossesByFamilyInLbs();
+			}
+			//else
+			this.paretoUnit = 'kUSD';
+			return this.getParetoLossesByFamilyInKusd();
+		}
+		//else
+		//paretoOption1 in this case is 'Potentials'
+		if(this.paretoOption2.text() === 'Family') {
+			if(this.paretoOption3.text() === '(lbs)') {
+				this.paretoUnit = 'lbs';
+				return this.getParetoPotentialsByFamilyInLbs();
+			}
+			//else
+			this.paretoUnit = 'kUSD';
+			return this.getParetoPotentialsByFamilyInKusd();
+		}
+		//esle
+		//paretoOption2 in this case is 'Loss'
+		if(this.paretoOption3.text() === '(lbs)') {
+			this.paretoUnit = 'lbs';
+			return this.getParetoPotentialsByLossInLbs();
+		}
+		//else
+		this.paretoUnit = 'kUSD';
+		return this.getParetoPotentialsByLossInKusd();
+	};
+
+	ReportMaterial.prototype.onComponentChanged = function() {
+		const inst = this;
+		this.referencePeriodValue = this.referencePeriod.find(':selected').val();
+		this.lineValue = this.line.find(':selected').val();
+		if(this.referencePeriodValue != 0) {
+			this.materialsettings = new MaterialSettings(this.userRef, this.referencePeriodValue);
+			const construct = this.materialsettings.constructLayout();
+			construct.then(() => {
+				//init paretoFamilt
+				inst.initParetoFamily();
+				inst.calLossData();
+				inst.initGraphs();
+				inst.initDataLayout();
+			}).catch(err => {
+				console.log(err);
+			});
+		}
+	};
+
+	ReportMaterial.prototype.getColors = function(num) {
+		const colors = [];
+		for(var i = 0; i < num; i++) {
+			colors[i] = this.paintBox[i];
+		}
+		return colors;
+	};
+
+	//FUCNTION TO DISPLAY TEXT DIALOG AT THE TOP
+	function displayDialog(msg, dialogType) {
+		$('html, body').scrollTop(0);
+		var dialogBox = $('.alert-' + dialogType);
+		if(dialogBox.length === 0) //dialogBox with class 'dialogType' does not exists
+			dialogBox =$('.alert-warning');
+		dialogBox.html(msg);
+		dialogBox.fadeIn();
+		var timer = setInterval(function() {
+			dialogBox.fadeOut();
+			clearInterval(timer);
+		}, 4000);
+	};
+
+	$(document).ready(function() {
+		firebase.auth().onAuthStateChanged(function(user) {
+			if(user) {
+				//User is signed in
+				const inspector = new Inspector(user);
+				inspector.checkDisabled();
+				const reportMaterial = new ReportMaterial(user);
+			}
+		});
+	});
+
+</script>
+</head><body>
+	<div class="outer-wrapper container-fluid"></div>
+	<div class="outer-container">
+		<div class="alert alert-success dialog-box text-center"></div>
+		<div class="alert alert-warning dialog-box text-center"></div>
+		<div class="alert alert-danger dialog-box text-center"></div>
+		<div class="header-container container-fluid">
+			<header class="container-fluid row">
+				<div class="container slider-button-container col-1">
+					<div class="container slider-button header-item">
+						<img src="resources/side_bar_slider.png" alt="SLIDE" class="side-bar-slider">
+					</div>
+				</div>
+				<div class="container nav-container col-11">
+					<nav class="container row">
+						<div class="container col-11">
+							<ul class="nav">
+								<li class="nav-item top-nav-item header-item">
+									<a href="/products/factorymodal/" class="nav-link text-muted"><small>Overview</small></a>
+								</li>
+								<li class="nav-item top-nav-item top-nav-item-active header-item">
+									<a class="nav-link active"><small>Analytics</small></a>
+								</li>
+							</ul>
+						</div>
+						<div class="container header-item col-1">
+							<div class="d-inline-block m-2 float-right dropdown">
+								<i class="fa fa-chevron-circle-down text-primary d-block dropdown-toggle" data-toggle="dropdown" style="font-size: 170%;"></i>
+								<div class="dropdown-menu">
+									<a href="/products.html" class="dropdown-item text-medium text-low">Home</a>
+									<div class="dropdown-divider"></div>
+									<a class="dropdown-item text-medium text-low" id="nav-signout-icon">Sign Out</a>
+								</div>
+							</div>
+						</div>
+					</nav>
+				</div>
+			</header>
+		</div>
+		<div class="side-bar-container">
+			<ul class="nav flex-column">
+				<li class="nav-item side-nav-item">
+					<a href="analyticslayout.html" class="nav-link p-2">
+						<img src="resources/analytics_side_bar.png" class="opacity-5" alt="Analytics">
+					</a>
+				</li>
+				<li class="nav-item side-nav-item">
+					<a class="nav-link p-2 active side-nav-item-active">
+						<img src="resources/reports_side_bar.png" alt="Reports">
+					</a>
+				</li>
+				<li class="nav-item side-nav-item">
+					<a href="coststructure.html" class="nav-link p-2">
+						<img src="resources/cost_structure_side_bar.png" class="opacity-5" alt="Cost Structure">
+					</a>
+				</li>
+				<li class="nav-item side-nav-item">
+					<a href="masterplan.html" class="nav-link p-2">
+						<img src="resources/masterplan_side_bar.png" class="opacity-5" alt="Masterplan">
+					</a>
+				</li>
+			</ul>
+		</div>
+		<div class="main-container pt-0 pr-0">
+			<main>
+				<div class="container-fluid section bg-light pl-5 pr-0" id="section-1">
+					<div class="border-bottom p-4">
+						<div class="d-inline-block font-weight-bold h5 mr-5">
+							Reports
+						</div>
+						<div class="d-inline-block mx-2">
+							<select class="reference-period-select select-type-input bg-primary text-white text-medium p-1 px-2 rounded font-weight-light d-block">
+								<option value="0">Reference Period</option>
+							</select>
+						</div>
+						<div class="d-inline-block mx-2">
+							<select class="line-select select-type-input bg-primary text-white text-medium p-1 px-2 rounded font-weight-light d-block">
+								<option value="0">Line</option>
+							</select>
+						</div>
+					</div>
+					<div class="border-bottom py-1 px-4">
+						<ul class="nav nav-justified">
+							<li class="nav-item">
+								<a class="nav-link text-small text-muted font-weight-bold" href="/products/factorymodal/reportmachine.html">MACHINE</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link text-small text-muted font-weight-bold" href="/products/factorymodal/reportenergy.html">ENERGY</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link text-small text-danger font-weight-bold" href="/products/factorymodal/reportmaterial.html">MATERIAL</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link text-small text-muted font-weight-bold" href="/products/factorymodal/reportmanpower.html">MANPOWER</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link text-small text-muted font-weight-bold" href="/products/factorymodal/reportmaintaince.html">MAINTAINCE</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link text-small text-muted font-weight-bold" href="/products/factorymodal/reportvolume.html">VOLUME</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link text-small text-muted font-weight-bold" href="/products/factorymodal/reportfinance.html">FINANCE</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link text-small text-muted font-weight-bold" href="/products/factorymodal/settings.html">SETTINGS</a>
+							</li>
+						</ul>
+					</div>
+				</div>
+				<div class="container">
+					<div class="row my-4">
+						<div class="col-6">
+							<div class="row my-1">
+								<div class="col-6">
+									<div class="card bg-dark">
+										<div class="card-head mt-1">
+											<div class="container text-white text-small">
+												Material Efficiency(Current)
+												<span class="material-kpi-unit-toggle" style="border-bottom: 3px solid #50e3c2;"> LBS</span>
+											</div>
+										</div>
+										<div class="card-body pb-4">
+											<div class="material-efficiency-current-value text-center text-white font-weight-light">0%</div>
+										</div>
+									</div>
+								</div>
+								<div class="col-6">
+									<div class="card bg-dark">
+										<div class="card-head mt-1">
+											<div class="container text-white text-small">Waste(Current)</div>
+										</div>
+										<div class="card-body pb-4">
+											<div class="waste-current-value text-center text-white font-weight-light">0%</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="row my-3">
+								<div class="col-6">
+									<div class="card bg-dark">
+										<div class="card-head mt-1">
+											<div class="container text-white text-small">Material Efficiency(Vision)</div>
+										</div>
+										<div class="card-body pb-4">
+											<div class="material-efficiency-arrow representing-arrow">
+												<img src="resources/up_arrow_green.png">
+											</div>
+											<div class="material-efficiency-vision-value text-center text-white font-weight-light">0%</div>
+											<div class="text-center text-white text-extra-small font-weight-light"><span class="material-efficiency-increase-str">Increase</span> by <span class="material-efficiency-increase-value">0%</span></div>
+										</div>
+									</div>
+								</div>
+								<div class="col-6">
+									<div class="card bg-dark">
+										<div class="card-head mt-1">
+											<div class="container text-white text-small">Waste(Vision)</div>
+										</div>
+										<div class="card-body pb-4">
+											<div class="waste-arrow representing-arrow">
+												<img src="resources/down_arrow_green.png">
+											</div>
+											<div class="waste-vision-value text-center text-white font-weight-light">0%</div>
+											<div class="text-center text-white text-extra-small font-weight-light"><span class="waste-increase-str">Increase</span> by <span class="waste-increase-value">0%</span></div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="col-6">
+							<div class="row my-1">
+								<div class="col-6">
+									<div class="card card-h-2">
+										<div class="card-head">
+											<div class="d-inline-block m-2 text-medium text-dark font-weight-bold">Graphic Representation</div>
+											<div class="d-inline-block m-2 float-right dropdown">
+												<i class="fa fa-ellipsis-h text-muted d-block dropdown-toggle" data-toggle="dropdown"></i>
+												<div class="dropdown-menu">
+													<div class="dropdown-header py-1">Unit</div>
+													<div class="dropdown-divider"></div>
+													<a class="dropdown-item text-medium graphic-representation-toggle-lbs">LBS</a>
+													<a class="dropdown-item text-medium graphic-representation-toggle-kusd">kUSD</a>
+												</div>
+											</div>
+											<div class="clearfix"></div>
+										</div>
+										<div class="card-body">
+											<div class="text-center">
+												<img src="resources/report_material_graphic_representation.png" alt="ERROR_LOADING_RESOURCE" class="w-40">
+											</div>
+											<div class="graphic-representation-fam graphic-representation-fam-ym">
+												<div class="graphic-representation-fam-text graphic-representation-fam-ym-text rounded bg-light text-extra-small p-1 font-weight-bold" data-fam="ym">
+													0&nbsp;Tons
+												</div>
+												<!-- SVG starts -->
+												<svg width="20px" height="31px" viewBox="0 0 33 52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+												    <defs>
+												        <path d="M23.8994949,14 L13.2279221,3.32842712 L16.0563492,0.5 L31.6126984,16.0563492 L16.0563492,31.6126984 L13.2279221,28.7842712 L24.0121933,18 L-1.37635684e-15,18 L-1.37635684e-15,14 L23.8994949,14 Z" id="path-1"></path>
+												    </defs>
+												    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+												        <g id="Analytics---Reports---Material" transform="translate(-897.000000, -285.000000)">
+												            <g id="GraphicRepresentation" transform="translate(709.000000, 241.000000)">
+												                <g id="Linear" transform="translate(204.500000, 70.000000) rotate(-90.000000) translate(-204.500000, -70.000000) translate(178.500000, 53.500000)">
+												                    <g id="Group" transform="translate(32.000000, 15.760081)" stroke="#0E8DED" stroke-width="4">
+												                        <path d="M0,0.91733871 L0.5,0.91733871" id="Line"></path>
+												                    </g>
+												                    <g id="→" transform="translate(20.000000, 0.677419)">
+												                        <mask id="mask-2" fill="white">
+												                            <use xlink:href="#path-1"></use>
+												                        </mask>
+												                        <use id="Arrowhead" class="graphic-representation-fam-arrow" data-fam='ym' fill="#F8E71C" xlink:href="#path-1"></use>
+												                    </g>
+												                    <g id="←" transform="translate(16.000000, 16.677419) scale(-1, 1) translate(-16.000000, -16.677419) translate(0.000000, 0.677419)" class="graphic-representation-fam-arrow" data-fam='ym' fill="#F8E71C">
+												                        <path d="M28,18 L0,18 L0,14 L28,14 L28,0 L32,0 L32,32 L28,32 L28,18 Z" id="Line"></path>
+												                    </g>
+												                </g>
+												            </g>
+												        </g>
+												    </g>
+												</svg>
+												<!-- SVG ends -->
+											</div>
+											<div class="graphic-representation-fam graphic-representation-fam-ou">
+												<div class="graphic-representation-fam-text graphic-representation-fam-ou-text rounded bg-light text-extra-small p-1 font-weight-bold" data-fam="ou">
+													0&nbsp;Tons
+												</div>
+												<!-- SVG starts -->
+												<svg width="35px" height="41px" viewBox="0 0 57 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+												    <defs>
+												        <path d="M23.8994949,14 L13.2279221,3.32842712 L16.0563492,0.5 L31.6126984,16.0563492 L16.0563492,31.6126984 L13.2279221,28.7842712 L24.0121933,18 L-1.37635684e-15,18 L-1.37635684e-15,14 L23.8994949,14 Z" id="path-1"></path>
+												    </defs>
+												    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+												        <g id="Analytics---Reports---Material" transform="translate(-939.000000, -360.000000)">
+												            <g id="GraphicRepresentation" transform="translate(709.000000, 241.000000)">
+												                <g id="Linear" transform="translate(230.000000, 118.000000)">
+												                    <g id="→" transform="translate(25.000000, 0.500000)">
+												                        <mask id="mask-2" fill="white">
+												                            <use xlink:href="#path-1"></use>
+												                        </mask>
+												                        <use id="Arrowhead" class="graphic-representation-fam-arrow" data-fam='ou' fill="#417505" opacity="0.75" xlink:href="#path-1"></use>
+												                    </g>
+												                    <g id="←" transform="translate(12.500000, 16.500000) scale(-1, 1) translate(-12.500000, -16.500000) translate(0.000000, 14.500000)" class="graphic-representation-fam-arrow" data-fam='ou' fill="#417505" fill-opacity="0.75">
+												                        <rect id="Line" x="0" y="0" width="25" height="4"></rect>
+												                    </g>
+												                </g>
+												            </g>
+												        </g>
+												    </g>
+												</svg>
+												<!-- SVG ends -->
+											</div>
+											<div class="graphic-representation-fam graphic-representation-vision">
+												<div class="graphic-representation-fam-text graphic-representation-vision-text rounded bg-light text-extra-small p-1 font-weight-bold" data-fam="vision">
+													0&nbsp;Tons
+												</div>
+												<!-- SVG starts -->
+												<svg width="55px" height="21px" viewBox="0 0 85 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+												    <defs>
+												        <path d="M23.8994949,14 L13.2279221,3.32842712 L16.0563492,0.5 L31.6126984,16.0563492 L16.0563492,31.6126984 L13.2279221,28.7842712 L24.0121933,18 L-1.37635684e-15,18 L-1.37635684e-15,14 L23.8994949,14 Z" id="path-1"></path>
+												    </defs>
+												    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+												        <g id="Analytics---Reports---Material" transform="translate(-939.000000, -385.000000)">
+												            <g id="GraphicRepresentation" transform="translate(709.000000, 241.000000)">
+												                <g id="Linear" transform="translate(230.000000, 143.000000)">
+												                    <g id="Group" transform="translate(32.000000, 15.218750)" stroke="#417505" stroke-width="4">
+												                        <path d="M0,1.28125 L21,1.28125" id="Line"></path>
+												                    </g>
+												                    <g id="→" transform="translate(53.000000, 0.500000)">
+												                        <mask id="mask-2" fill="white">
+												                            <use xlink:href="#path-1"></use>
+												                        </mask>
+												                        <use id="Arrowhead" class="graphic-representation-fam-arrow" data-fam='vision' fill="#417505" xlink:href="#path-1"></use>
+												                    </g>
+												                    <g id="←" transform="translate(16.000000, 16.500000) scale(-1, 1) translate(-16.000000, -16.500000) translate(0.000000, 14.500000)" class="graphic-representation-fam-arrow" data-fam='vision' fill="#417505">
+												                        <rect id="Line" x="0" y="0" width="32" height="4"></rect>
+												                    </g>
+												                </g>
+												            </g>
+												        </g>
+												    </g>
+												</svg>
+												<!-- SVG ends -->
+											</div>
+											<div class="graphic-representation-fam graphic-representation-fam-qd">
+												<div class="graphic-representation-fam-text graphic-representation-fam-qd-text rounded bg-light text-extra-small p-1 font-weight-bold" data-fam="qd">
+													0&nbsp;Tons
+												</div>
+												<!-- SVG starts -->
+												<svg width="20px" height="31px" viewBox="0 0 33 52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+												    <defs>
+												        <path d="M23.8994949,14 L13.2279221,3.32842712 L16.0563492,0.5 L31.6126984,16.0563492 L16.0563492,31.6126984 L13.2279221,28.7842712 L24.0121933,18 L-1.37635684e-15,18 L-1.37635684e-15,14 L23.8994949,14 Z" id="path-1"></path>
+												    </defs>
+												    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+												        <g id="Analytics---Reports---Material" transform="translate(-838.000000, -431.000000)">
+												            <g id="GraphicRepresentation" transform="translate(709.000000, 241.000000)">
+												                <g id="Linear" transform="translate(145.850098, 216.000000) rotate(90.000000) translate(-145.850098, -216.000000) translate(119.850098, 199.500000)">
+												                    <g id="Group" transform="translate(32.000000, 15.760081)" stroke="#0E8DED" stroke-width="4">
+												                        <path d="M0,0.91733871 L0.5,0.91733871" id="Line"></path>
+												                    </g>
+												                    <g id="→" transform="translate(20.000000, 0.677419)">
+												                        <mask id="mask-2" fill="white">
+												                            <use xlink:href="#path-1"></use>
+												                        </mask>
+												                        <use id="Arrowhead" class="graphic-representation-fam-arrow" data-fam='qd' fill="#0E8DED" xlink:href="#path-1"></use>
+												                    </g>
+												                    <g id="←" transform="translate(16.000000, 16.677419) scale(-1, 1) translate(-16.000000, -16.677419) translate(0.000000, 0.677419)" class="graphic-representation-fam-arrow" data-fam='qd' fill="#0E8DED">
+												                        <path d="M28,18 L0,18 L0,14 L28,14 L28,0 L32,0 L32,32 L28,32 L28,18 Z" id="Line"></path>
+												                    </g>
+												                </g>
+												            </g>
+												        </g>
+												    </g>
+												</svg>
+												<!-- SVG ends -->
+											</div>
+											<div class="graphic-representation-fam graphic-representation-fam-ps">
+												<div class="graphic-representation-fam-text graphic-representation-fam-ps-text rounded bg-light text-extra-small p-1 font-weight-bold" data-fam="ps">
+													0&nbsp;Tons
+												</div>
+												<!-- SVG starts -->
+												<svg width="20px" height="31px" viewBox="0 0 33 52" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+												    <defs>
+												        <path d="M23.8994949,14 L13.2279221,3.32842712 L16.0563492,0.5 L31.6126984,16.0563492 L16.0563492,31.6126984 L13.2279221,28.7842712 L24.0121933,18 L-1.37635684e-15,18 L-1.37635684e-15,14 L23.8994949,14 Z" id="path-1"></path>
+												    </defs>
+												    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+												        <g id="Analytics---Reports---Material" transform="translate(-838.000000, -431.000000)">
+												            <g id="GraphicRepresentation" transform="translate(709.000000, 241.000000)">
+												                <g id="Linear" transform="translate(145.850098, 216.000000) rotate(90.000000) translate(-145.850098, -216.000000) translate(119.850098, 199.500000)">
+												                    <g id="Group" transform="translate(32.000000, 15.760081)" stroke="#DE26D2" stroke-width="4">
+												                        <path d="M0,0.91733871 L0.5,0.91733871" id="Line"></path>
+												                    </g>
+												                    <g id="→" transform="translate(20.000000, 0.677419)">
+												                        <mask id="mask-2" fill="white">
+												                            <use xlink:href="#path-1"></use>
+												                        </mask>
+												                        <use id="Arrowhead" class="graphic-representation-fam-arrow" data-fam='ps' fill="#DE26D2" xlink:href="#path-1"></use>
+												                    </g>
+												                    <g id="←" transform="translate(16.000000, 16.677419) scale(-1, 1) translate(-16.000000, -16.677419) translate(0.000000, 0.677419)" class="graphic-representation-fam-arrow" data-fam='ps' fill="#DE26D2">
+												                        <path d="M28,18 L0,18 L0,14 L28,14 L28,0 L32,0 L32,32 L28,32 L28,18 Z" id="Line"></path>
+												                    </g>
+												                </g>
+												            </g>
+												        </g>
+												    </g>
+												</svg>
+												<!-- SVG ends -->
+											</div>
+											<div class="graphic-representation-fam graphic-representation-current">
+												<div class="graphic-representation-fam-text graphic-representation-current-text rounded bg-light text-extra-small p-1 font-weight-bold" data-fam="current">
+													0&nbsp;Tons
+												</div>
+												<!-- SVG starts -->
+												<svg width="55px" height="21px" viewBox="0 0 85 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+												    <defs>
+												        <path d="M23.8994949,14 L13.2279221,3.32842712 L16.0563492,0.5 L31.6126984,16.0563492 L16.0563492,31.6126984 L13.2279221,28.7842712 L24.0121933,18 L-1.37635684e-15,18 L-1.37635684e-15,14 L23.8994949,14 Z" id="path-1"></path>
+												    </defs>
+												    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+												        <g id="Analytics---Reports---Material" transform="translate(-939.000000, -385.000000)">
+												            <g id="GraphicRepresentation" transform="translate(709.000000, 241.000000)">
+												                <g id="Linear" transform="translate(230.000000, 143.000000)">
+												                    <g id="Group" transform="translate(32.000000, 15.218750)" stroke="#0E3DFF" stroke-width="4">
+												                        <path d="M0,1.28125 L21,1.28125" id="Line"></path>
+												                    </g>
+												                    <g id="→" transform="translate(53.000000, 0.500000)">
+												                        <mask id="mask-2" fill="white">
+												                            <use xlink:href="#path-1"></use>
+												                        </mask>
+												                        <use id="Arrowhead" class="graphic-representation-fam-arrow" data-fam='current' fill="#0E3DFF" xlink:href="#path-1"></use>
+												                    </g>
+												                    <g id="←" transform="translate(16.000000, 16.500000) scale(-1, 1) translate(-16.000000, -16.500000) translate(0.000000, 14.500000)" class="graphic-representation-fam-arrow" data-fam='current' fill="#0E3DFF">
+												                        <rect id="Line" x="0" y="0" width="32" height="4"></rect>
+												                    </g>
+												                </g>
+												            </g>
+												        </g>
+												    </g>
+												</svg>
+												<!-- SVG ends -->
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="col-6">
+									<div class="card card-h-2">
+										<div class="card-head">
+											<div class="d-inline-block m-2 text-medium text-dark font-weight-bold">Reference &amp; Vision Comparision</div>
+											<div class="d-inline-block m-2 float-right dropdown">
+												<i class="fa fa-ellipsis-h text-muted d-block dropdown-toggle" data-toggle="dropdown"></i>
+												<div class="dropdown-menu">
+													<div class="dropdown-header py-1">Unit</div>
+													<div class="dropdown-divider"></div>
+													<a class="dropdown-item text-medium reference-vision-toggle-lbs">LBS</a>
+													<a class="dropdown-item text-medium reference-vision-toggle-kusd">kUSD</a>
+												</div>
+											</div>
+											<div class="clearfix"></div>
+										</div>
+										<div class="card-body reference-vision-graph-canvas-container">
+											<canvas class="reference-vision-graph-canvas graph-canvas"></canvas>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="container">
+					<div class="card pb-5">
+						<div class="card-body pb-5">
+							<div class="container h5 text-dark">
+								<strong>Pareto of <span class="pareto-option pareto-option-1" style="border-bottom: 3px solid #50e3c2;">Losses</span> by <span class="pareto-option pareto-option-2" style="border-bottom: 3px solid #50e3c2;">Family</span><span class="pareto-option pareto-option-3" style="margin-left: 10px; border-bottom: 3px solid #50e3c2;">(lbs)</span>
+								</strong>
+							</div>
+							<div class="text-dark text-small d-inline-block ml-3">
+								<strong>Comparison of all (insert number of losses here) losses by grouping into their (insert number of families here) families.</strong>
+							</div>
+							<div class="d-inline-block float-right">
+								<select class="family-select select-type-input p-1 px-2 rounded text-small font-weight-bold d-block">
+									<option value="0">All Families</option>
+								</select>
+							</div>
+							<div class="clearfix"></div>
+							<div class="my-2 pareto-graph-canvas-container">
+								<canvas class="pareto-graph-canvas"></canvas>
+							</div>
+						</div>
+					</div>
+				</div>
+			</main>
+		</div>
+	</div>
+</body></html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

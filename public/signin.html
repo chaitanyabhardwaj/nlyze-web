@@ -1,10 +1,13 @@
 
 <!DOCTYPE html><html lang="en-US" dir="ltr"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" /><title>Sign In | NLYZE</title><meta name="description" content="" /><meta name="owner" content="Sunil Malhotra"><meta name="author" content="Chaitanya Bhardwaj" /><base href="signin.html" target="_blank" /><meta name="referrer" content="origin-when-cross-origin" /><link rel="icon" type="image/x-icon" href="resources/favicon_title.png" /><meta name="robots" content="index, follow">
-<link rel="stylesheet" type="text/css" media="screen and (max-width: 900px)" href="stylesheets/basicstyle-small.css" />
-<link rel="stylesheet" type="text/css" media="screen and (min-width: 901px)" href="stylesheets/basicstyle-large.css" />
+<link rel="stylesheet" type="text/css" href="lib/bootstrap-4/css/bootstrap.min.css">
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" type="text/css" href="stylesheets/index-large.css">
 <link rel="stylesheet" type="text/css" media="screen and (max-width: 900px)" href="stylesheets/signin-small.css" />
 <link rel="stylesheet" type="text/css" media="screen and (min-width: 901px)" href="stylesheets/signin-large.css" />
 <script src="scripts/jquery-3.2.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+<script src="lib/bootstrap-4/js/bootstrap.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/4.12.0/firebase.js"></script>
 <script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-firestore.js"></script>
 <script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-functions.js"></script>
@@ -18,27 +21,33 @@
 		const loaderHandle = $('.loader');
 		loaderHandle.show();
 		firebase.auth().signInWithEmailAndPassword(email, passwd).then(function(user) {
-			//window.location.replace('index.html');
+			window.location.replace('index.html');
 		}).catch(function(error) {
 			if(error.code === 'auth/user-not-found')
-				displayError('Account not created, please sign up');
+				displayDialog('Account not created, please sign up');
 			else if(error.code === 'auth/wrong-password' || error.code === 'auth/invalid-email')
-				displayError('Invalid email or password');
+				displayDialog('Invalid email or password','danger');
 		});
 	};
 
-	//FUCNTION TO DISPLAY TEXT FLOATING AT THE TOP
-	function displayError(msg) {
+	//FUCNTION TO DISPLAY TEXT DIALOG AT THE TOP
+	function displayDialog(msg, dialogType) {
 		$('html, body').scrollTop(0);
-		$('#error-container').html(msg);
-		$('#error-container').fadeIn();
+		var dialogBox = $('.alert-' + dialogType);
+		if(dialogBox.length === 0) //dialogBox with class 'dialogType' does not exsists
+			dialogBox =$('.alert-warning');
+		dialogBox.html(msg);
+		dialogBox.fadeIn();
 		var timer = setInterval(function() {
-			$('#error-container').fadeOut();
+			dialogBox.fadeOut();
 			clearInterval(timer);
 		}, 4000);
 	};
 
 	$(document).ready(function() {
+
+		//make main element's height cover the page
+		$('.main-container').height(window.innerHeight);
 
 		//form submission events
 		$('#signin-button').click(function() {
@@ -85,7 +94,7 @@
 						window.location.replace('/nlyze_user_auth.html');
 					}
 					else {
-						window.location.replace('/');
+						window.location.replace('/products.html');
 					}
 				}).catch(error => {
 					console.log(error);
@@ -97,134 +106,39 @@
 
 </script>
 </head><body>
-	<div id="outer-container" class="container">
-		<div class="loader"></div>
-		<div id="error-container"></div>
-		<div id="header-container" class="container">
-			<header class="container">
-				<div id="header-content" class="container center">
-					<a href="index.html" target="_self">
-						<div class="favicon-container inner-container img-container">
-							<img src="resources/favicon.png" alt="Nlyse" class="favicon-img">
-						</div>
-					</a>
-					<div id="nav-container" class="inner-container">
-						<div id="nav-container-products" class="inner-container nav-content">
-							<div id="nav-products"><a href="products.html" target="_self">Products</a></div>
-							<!-- OPTIONAL DROPDOWN -->
-						</div>
-						<div id="nav-container-aboutus" class="inner-container nav-content">
-							<div id="nav-aboutus"><a href="aboutus.html" target="_self">About Us</a></div>
-							<!-- OPTIONAL DROPDOWN -->
-						</div>
-						<div id="nav-container-support" class="inner-container nav-content">
-							<div id="nav-support"><a href="support.html" target="_self">Support</a></div>
-							<!-- OPTIONAL DROPDOWN -->
-						</div>
-						<div id="nav-container-contactus" class="inner-container nav-content">
-							<div id="nav-contactus"><a href="contactus.html" target="_self">Contact Us</a></div>
-							<!-- OPTIONAL DROPDOWN -->
-						</div>
-						<div id="nav-container-console" class="inner-container nav-content">
-							<div id="nav-console"><a href="console.html">GO TO CONSOLE</a></div>
-							<!-- OPTIONAL DROPDOWN -->
-						</div>
-						<div id="nav-container-signin" class="inner-container">
-							<div id="nav-signin" class="container img-container nav-content">
-								<img src="resources/profile_placeholder.png" alt="User" class="profile-placeholder">
-							</div>
-							<div class="dropdown" id="nav-dropdown">
-								<div class="dropdown-attach"></div>
-								<ul class="dropdown-list">
-									<li><a href="/main_account.html" target="_self"><img src="/resources/settings_icon.png" class="small"><img src="/resources/settings_icon_invert.png" class="large">Account</a></li>
-									<li id="nav-signin-icon"><a href="/signin.html" target="_self"><img src="/resources/profile_placeholder.png" class="small"><img src="/resources/profile_placeholder_invert.png" class="large">Sign In</a></li>
-									<li id="nav-signout-icon"><img src="/resources/profile_placeholder.png" class="small"><img src="/resources/profile_placeholder_invert.png" class="large">Sign Out <span id="nav-signout-name"><!--Username--></span></li>
-								</ul>
-							</div>
-						</div>
-					</div>
-					<div id="nav-drawer" class="inner-container img-container">
-						<img src="/resources/drawer_icon.png" alt="DROPDOWN">
-					</div>
-					<div class="clearfix"></div>
+	<div class="outer-wrapper container-fluid"></div>
+	<div class="outer-container">
+		<div class="alert alert-success dialog-box text-center"></div>
+		<div class="alert alert-warning dialog-box text-center"></div>
+		<div class="alert alert-danger dialog-box text-center"></div>
+		<div class="main-container login-background">
+			<main>
+				<div class="login-heading my-5 text-center">
+					<div class="text-white h1 border-bottom d-inline-block login-heading-text">Login</div>
 				</div>
-			</header>
-		</div>
-		<div id="main-container" class="container">
-			<main class="container">
-				<div id="main-content" class="container">
-					<section id="section-0" class="container">
-						<div id="section-0-content" class="container section-content center card">
-							<div id="section-0-heading-container" class="container">
-								<h1>Please Sign In</h1>
-							</div>
-							<div class="inner-container form-container">
-								<div class="container input-container">
-									<input type="email" name="uname" id="uname" placeholder="Email">
-								</div>
-								<div class="container input-container">
-									<input type="password" name="passwd" id="passwd" placeholder="Password">
-								</div>
-								<div class="inner-container">
-									<button type="button" id="signin-button">SIGN IN</button>
-									<div class="clearfix"></div>
-								</div>
-								<div class="inner-container" id="passwd-reset-container">
-									<button type="button" id="passwd-reset-button">Forgot your password?</button>
-								</div>
-								<div class="clearfix"></div>
-							</div>
-							<div class="inner-container" id="form-about">
-								<h1>You can use your<img src="resources/favicon_title.png" alt="NLYZE" class="nlyze-1">ID for other services such as</h1>
-								<ul id="service-list">
-									<li>RealTime Collector</li>
-									<li>Etc.</li>
-									<li>Etc.</li>
-								</ul>
-								<!--<div class="container" id="createid-container">
-									<a href="createid.html" target="_self">Don't have a <img src="resources/favicon_title.png" alt="NLYZE" class="nlyze-1">ID? Create one now.</a>
-								</div> -->
-							</div>
-							<div class="clearfix"></div>
+				<div class="login-card card w-30 m-auto my-5 shadow-lg">
+					<div class="card-body">
+						<div class="login-card-header my-5">
+							<div class="h1 text-center login-card-header-text">Nlyze</div>
 						</div>
-					</section>
+						<div class="login-card-fields my-5">
+							<div class="field-username text-center my-4">
+								<i class="fa fa-user-circle-o text-primary"></i>
+								<input type="email" id="uname" class="border-0 px-3 py-2 w-75" placeholder="Username">
+							</div>
+							<div class="field-username text-center my-4">
+								<i class="fa fa-key text-primary"></i>
+								<input type="password" id="passwd" class="border-0 px-3 py-2 w-75" placeholder="Password">
+							</div>
+						</div>
+						<div class="login-card-submit-container container">
+							<button type="button" class="login-card-submit-button border-0 w-100 text-white px-4 py-3 font-weight-light">
+								Get Started
+							</button>
+						</div>
+					</div>
 				</div>
 			</main>
-		</div>
-		<div id="footer-container" class="container">
-			<footer class="container">
-				<div id="footer-content" class="container center">
-					<div id="aboutus-summary" class="inner-container">
-						<h4>About Us</h4>
-						<!-- Write About Us Summary Here -->
-					</div>
-					<div class="contactus-summary inner-container">
-						<h4>Contact Us</h4>
-						<div class="container contact-container">
-							<div class="inner-container img-container contact-icon">
-								<img src="resources/phone_icon.png" alt="Phone : ">
-							</div>
-							519-757-2531
-						</div>
-						<div class="container contact-container">
-							<div class="inner-container img-container contact-icon">
-								<img src="resources/mail_icon.png" alt="Email : ">
-							</div>
-							sunil@nlze.com
-						</div>
-						<div class="container contact-container">
-							<div class="inner-container img-container contact-icon">
-								<img src="resources/home_icon.png" alt="Address : ">
-							</div>
-							43, Coxwell Cres<br>Brantford, ON, N3P1P5<br>Canada.
-						</div>
-					</div>
-					<div class="clearfix"></div>
-					<div id="copyright" class="container">
-						<!-- Copyright display -->
-					</div>
-				</div>
-			</footer>
 		</div>
 	</div>
 </body></html>

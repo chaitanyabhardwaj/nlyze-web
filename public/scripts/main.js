@@ -166,7 +166,7 @@ function globalInit() {
 	$('#nav-signout-icon').click(function() {
 		firebase.auth().signOut().then(function() {
 			//User signed out
-			displayError("Signed Out");
+			displayDialog("Signed Out");
 		}).catch(function(error) {
 			console.log(error.message);
 		});
@@ -201,6 +201,10 @@ $(document).ready(function() {
 	const dropdown2 = new Dropdown($('#nav-drawer'), $('#nav-container'));
 	dropdown1.closeIfClickedElsewhere();
 	const header = new Header();
+	//Initialize bootstrap tooltop
+	$('[data-toggle="tooltip"]').tooltip();
+	//Initialize bootstrap popover
+    $('[data-toggle="popover"]').popover(); 
 	// Initialize Firebase. Project nlyze-1
   	var config = {
     	apiKey: "AIzaSyCXWIr6ctkGUGYRvXsYgFG-NnCk6VRW_7Q",

@@ -24,7 +24,7 @@
 <script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-firestore.js"></script>
 <script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-functions.js"></script>
 <script src="/scripts/jquery-ui-1.12.1.custom/jquery-ui.min.js"></script>
-<script src="/scripts/main.js"></script>
+<script src="scripts/main.js"></script>
 <script src="/scripts/productchecker.js"></script>
 <script src="/scripts/inspector.js"></script>
 <script>
@@ -35,8 +35,11 @@
 		const inst = this;
 		this.userRef = user;
 		this.db = firebase.firestore();
+		this.productRef = this.db.collection('users').doc(user.uid).collection('products').doc('np001');
 		this.buttonMappingRef = this.db.collection('users/' + user.uid + '/products/np001/button_mapping');
 		this.BASE = "https://api.bt.tn/2014-06/";
+		//Calling initializing functions
+		this.authUser();
 		//Instantiate the layout
 		this.initLayout();
 		//ref to dom elements
@@ -67,6 +70,24 @@
 		});
 		$('#floating-close').click(function() {
 			inst.closeNotificationPanel();
+		});
+	};
+
+	ButtonSettings.prototype.authUser = function() {
+		this.productRef.get().then(function(p) {
+			if(p.exists) {
+				if(p.data().active) {
+					//Authorized product
+				}
+				else {
+					//Product not authorized
+					window.location.replace('/');
+				}
+			}
+			else 
+				window.location.replace('/');
+		}).catch(function(error) {
+			console.log(error);
 		});
 	};
 

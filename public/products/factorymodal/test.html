@@ -1,0 +1,39 @@
+<!DOCTYPE html><html lang="en-US" dir="ltr"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" /><title>NLYZE | Factory Model</title><meta name="description" content="" /><meta name="owner" content="Nakul Malhotra"><meta name="author" content="Chaitanya Bhardwaj" /><base href="reportmachine.html" target="_blank" /><meta name="referrer" content="origin-when-cross-origin" /><link rel="icon" type="image/x-icon" href="/resources/favicon_title.png" /><meta name="robots" content="index, nofollow">
+<link rel="stylesheet" type="text/css" href="stylesheets/index-large.css">
+<script src="scripts/jquery-3.2.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+<script src="lib/bootstrap-4/js/bootstrap.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-functions.js"></script>
+<script src="/scripts/main.js"></script>
+<script>
+
+	'use strict';
+
+	function test() {
+		const db = firebase.firestore();
+		var fileTypesArr = {fileTypes : []};
+		var i = 0, j = 0;
+		return db.collection('products/np002/factoryFileTypes').get().then(querySnapshot => {
+			querySnapshot.forEach(doc => {
+				fileTypesArr.fileTypes[i++] = { doc.id :  }
+				return db.collection('products/np002/factoryFileTypes/' + doc.id + '/family').get().then(querySnapshot1 => {
+					querySnapshot1.forEach(doc1 => {
+
+					});
+					console.log('======================================');
+					for(var k = 0; k < fileTypesArr.length; k++) {
+					}
+				});
+			});
+		});
+	};
+
+	$(document).ready(function() {
+		test();
+	});
+
+</script>
+</head><body>
+</body></html>

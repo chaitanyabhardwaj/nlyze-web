@@ -1,0 +1,10 @@
+.reference-period-select { min-width: 150px; }
+.area-select { min-width: 60px; }
+.reference-period-select, .area-select { background: url(dropdownicon_white.png) 95% / 15px no-repeat #fff; border: none; }
+.main-container { background-color: #eceff4 }
+.indicators-container { padding-top: 35px; padding-bottom: 35px;  }
+.oee-indicator-container { background: linear-gradient(to right, #485563, #29323c); }
+.matteff-indicator-container { background: linear-gradient(to right, #f5515f, #9f041b); }
+.ole-indicator-container { background: linear-gradient(to right, #17cec4, #08aeea); }
+.enecons-indicator-container { background: linear-gradient(to right, #b4ec51, #429321); }
+.vertical-side-bar { background-color: #a7a7a7; width: 3px; height: 100%; display: inline-block; vertical-align: middle; opacity: 0.5; }

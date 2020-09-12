@@ -1,0 +1,483 @@
+<!DOCTYPE html><html lang="en-US" dir="ltr"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" /><title>NLYZE | Factory Model</title><meta name="description" content="" /><meta name="owner" content="Nakul Malhotra"><meta name="author" content="Chaitanya Bhardwaj" /><base href="analyticsoverview.html" target="_blank" /><meta name="referrer" content="origin-when-cross-origin" /><link rel="icon" type="image/x-icon" href="resources/favicon_title.png" /><meta name="robots" content="index, nofollow">
+<link rel="stylesheet" type="text/css" href="lib/bootstrap-4/css/bootstrap.min.css">
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" type="text/css" href="stylesheets/index-large.css">
+<link rel="stylesheet" type="text/css" href="stylesheets/analyticsoverview-large.css">
+<link rel="stylesheet" type="text/css" href="scripts/jquery-ui-1.12.1.custom/jquery-ui.min.css">
+<script src="scripts/jquery-3.2.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+<script src="lib/bootstrap-4/js/bootstrap.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-functions.js"></script>
+<script src="scripts/main.js"></script>
+<script src="scripts/jquery-ui-1.12.1.custom/jquery-ui.min.js"></script>
+<script src="scripts/productchecker.js"></script>
+<script src="scripts/inspector.js"></script>
+<script src="scripts/Chart.bundle.min.js"></script>
+<script>
+
+	'use strict';
+
+	function AnalyticsLayout() {
+		this.analyticsCards = $('.analytics-card');
+	};
+
+	//set height of cards equal to the width
+	AnalyticsLayout.prototype.setSquareCards = function() {
+		//fetch analytics card width
+		const cardsW = this.analyticsCards.width();
+		this.analyticsCards.height(cardsW);
+	};
+
+	//demo chart script
+	$(document).ready(function() {
+		const analyticsLayout = new AnalyticsLayout();
+		analyticsLayout.setSquareCards();
+		const ctx2 = document.getElementById("financial-overview-canvas").getContext('2d');
+		const ctx3 = document.getElementById("goal-by-metrics-canvas").getContext('2d');
+		const ctx4 = document.getElementById("losses-canvas").getContext('2d');
+		const ctx5 = document.getElementById("major-losses-canvas").getContext('2d');
+		//set height and width of canvas
+		ctx2.canvas.width = analyticsLayout.analyticsCards.width() - 100;
+		ctx3.canvas.width = analyticsLayout.analyticsCards.width() - 100;
+		ctx4.canvas.width = analyticsLayout.analyticsCards.width() - 100;
+		ctx5.canvas.width = analyticsLayout.analyticsCards.width() - 100;
+
+		ctx2.canvas.height = analyticsLayout.analyticsCards.height() - 100;
+		ctx3.canvas.height = analyticsLayout.analyticsCards.height() - 100;
+		ctx4.canvas.height = analyticsLayout.analyticsCards.height() - 100;
+		ctx5.canvas.height = analyticsLayout.analyticsCards.height() - 100;
+
+		//Charts tooltip always show plugin
+		Chart.pluginService.register({
+			beforeRender: function (chart) {
+				if (chart.config.options.showAllTooltips) {
+					// create an array of tooltips
+					// we can't use the chart tooltip because there is only one tooltip per chart
+					chart.pluginTooltips = [];
+					chart.config.data.datasets.forEach(function (dataset, i) {
+						chart.getDatasetMeta(i).data.forEach(function (sector, j) {
+							chart.pluginTooltips.push(new Chart.Tooltip({
+								_chart: chart.chart,
+								_chartInstance: chart,
+								_data: chart.data,
+								_options: chart.options.tooltips,
+								_active: [sector]
+							}, chart));
+						});
+					});
+
+					// turn off normal tooltips
+					chart.options.tooltips.enabled = false;
+				}
+			},
+			afterDraw: function (chart, easing) {
+				if (chart.config.options.showAllTooltips) {
+					// we don't want the permanent tooltips to animate, so don't do anything till the animation runs atleast once
+					if (!chart.allTooltipsOnce) {
+						if (easing !== 1)
+							return;
+						chart.allTooltipsOnce = true;
+					}
+
+					// turn on tooltips
+					chart.options.tooltips.enabled = true;
+					Chart.helpers.each(chart.pluginTooltips, function (tooltip) {
+						tooltip.initialize();
+						tooltip.update();
+						// we don't actually need this since we are not animating tooltips
+						tooltip.pivot();
+						tooltip.transition(easing).draw();
+					});
+					chart.options.tooltips.enabled = false;
+				}
+			}
+		});
+		//end plugin
+		const chart2 = new Chart(ctx2, {
+			type : 'line',
+			data : {
+				labels : ['2011', '2012', '2013', '2014', '2015'],
+				datasets : [{
+					label : ['$'],
+					data : [10, 35, 30, 40, 45],
+					backgroundColor : [
+						'rgba(206,11,36,1)'
+					],
+					borderColor : [
+						'rgba(206,11,36,1)'
+					],
+					pointBackgroundColor : 'rgba(206,11,36,1)',
+					pointBorderColor : 'rgba(0,0,0,0)',
+					pointHoverBackgroundColor : 'rgba(145,8,26,1)',
+					pointHoverBorderColor : 'rgba(0,0,0,0)',
+					pointRadius : 5,
+					borderWidth : 1.5,
+					cubicInterpolationMode : 'monotone',
+					fill : false
+				}]
+			},
+			options: {
+				layout : {
+					padding : {
+						top : 20
+					}
+				},
+				showAllTooltips: true,
+				legend : { display : false },
+        		scales : {
+    				xAxes: [{
+    					ticks : {
+    						fontColor : '#696969'
+    					},
+                		gridLines: {
+                    		display:false,
+                    		drawBorder : false
+                		}
+            		}],
+    				yAxes: [{
+    					ticks : {
+    						display: false
+    					},
+                		gridLines: {
+                			display:false,
+                			drawBorder : false
+                		}   
+            		}]
+    			},
+    			tooltips : {
+    				yAlign : 'bottom',
+    				titleFontSize : 0,
+    				backgroundColor : 'rgba(0,0,0,0)',
+    				bodyFontColor : '#000',
+    				bodyFontSize : 11,
+    				bodyFontStyle : 'bold',
+    				footerFontColor : '#000',
+    				displayColors : false
+    			}
+    		}
+		});
+
+		const chart3 = new Chart(ctx3, {
+			type : 'bar',
+			data : {
+				labels : ['OEE', 'MAT EFF', 'PR', 'Ignou'],
+				datasets : [{
+					label : ['Current'],
+					data : [34, 12, 47, 11],
+					backgroundColor : [
+						'rgba(249,204,54,1)',
+						'rgba(249,204,54,1)',
+						'rgba(249,204,54,1)',
+						'rgba(249,204,54,1)'
+					],
+					borderColor : [
+						'rgba(249,204,54,1)',
+						'rgba(249,204,54,1)',
+						'rgba(249,204,54,1)',
+						'rgba(249,204,54,1)'
+					],
+					borderWidth : 1.5,
+				},
+				{
+					label : ['Goal'],
+					data : [98, 15, 100, 5],
+					backgroundColor : [
+						'rgba(76,212,59,1)',
+						'rgba(76,212,59,1)',
+						'rgba(76,212,59,1)',
+						'rgba(76,212,59,1)'
+					],
+					borderColor : [
+						'rgba(76,212,59,1)',
+						'rgba(76,212,59,1)',
+						'rgba(76,212,59,1)',
+						'rgba(76,212,59,1)'
+					],
+					borderWidth : 1.5,
+				}]
+			},
+			options: {
+				layout : {
+					padding : {
+						top : 20
+					}
+				},
+				showAllTooltips: false,
+				legend : {  },
+        		scales : {
+    				xAxes: [{
+    					stacked : true,
+    					ticks : {
+    						fontColor : '#696969',
+    						fontSize : 9
+    					},
+                		gridLines: {
+                    		display:false,
+                    		drawBorder : false
+                		}
+            		}],
+    				yAxes: [{
+    					stacked : true,
+    					ticks : {
+    						display : false
+    					},
+                		gridLines: {
+                			display:false,
+                			drawBorder : false
+                		}   
+            		}]
+    			},
+    			tooltips : {
+    				yAlign : 'bottom',
+    				titleFontSize : 0,
+    				backgroundColor : 'rgba(0,0,0,0)',
+    				bodyFontColor : '#000',
+    				bodyFontSize : 12,
+    				bodyFontStyle : 'bold',
+    				footerFontColor : '#000',
+    				displayColors : false
+    			}
+    		}
+		});
+
+		const chart4 = new Chart(ctx4, {
+			type : 'doughnut',
+			data : {
+				labels : ['Machine', 'Energy', 'Manpower'],
+				datasets : [{
+					label : [''],
+					data : [25,5,70],
+					backgroundColor : [
+						'rgba(76,212,59,1)',
+						'rgba(213,22,101,1)',
+						'rgba(249,204,54,1)'
+					],
+					borderColor : [
+						'rgba(76,212,59,1)',
+						'rgba(213,22,101,1)',
+						'rgba(249,204,54,1)'
+					],
+					borderWidth : 1.5,
+					cubicInterpolationMode : 'monotone',
+					fill : false
+				}]
+			},
+			options: {
+				layout : {
+					padding : {
+						top : 20
+					}
+				},
+				showAllTooltips: true,
+				legend : { display : false },
+        		scales : {
+    				xAxes: [{
+    					ticks : {
+    						display: false
+    					},
+                		gridLines: {
+                    		display:false,
+                    		drawBorder : false
+                		}
+            		}],
+    				yAxes: [{
+    					ticks : {
+    						display: false
+    					},
+                		gridLines: {
+                			display:false,
+                			drawBorder : false
+                		}   
+            		}]
+    			},
+    			tooltips : {
+    				yAlign : 'top',
+    				titleFontSize : 0,
+    				backgroundColor : 'rgba(0,0,0,0)',
+    				bodyFontColor : '#000',
+    				bodyFontSize : 13,
+    				bodyFontStyle : 'bold',
+    				footerFontColor : '#000',
+    				displayColors : false,
+    				bodyFontFamily : "'Arial', sans-serif"
+    			}
+    		}
+		});
+	});
+
+</script>
+</head><body>
+	<div class="outer-wrapper container-fluid"></div>
+	<div class="outer-container">
+		<!--bootstrap modal starts -->
+		<div class="modal fade">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<div class="modal-title h4">
+							<!-- fill in the title -->
+						</div>
+						<button type="button" class="close" data-dismiss="modal">&times;</button>
+					</div>
+					<div class="modal-body">
+						<!-- fill in the body -->
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn basic-btn btn-light" data-dismiss="modal">Close</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!--bootstrap modal ends -->
+		<div class="alert alert-success dialog-box text-center"></div>
+		<div class="alert alert-warning dialog-box text-center"></div>
+		<div class="alert alert-danger dialog-box text-center"></div>
+		<div class="header-container container-fluid">
+			<header class="container-fluid row">
+				<div class="container slider-button-container col-1">
+					<div class="container slider-button header-item">
+						<img src="resources/side_bar_slider.png" alt="SLIDE" class="side-bar-slider">
+					</div>
+				</div>
+				<div class="container nav-container col-11">
+					<nav class="container row">
+						<div class="container col-11">
+							<ul class="nav">
+								<li class="nav-item top-nav-item header-item">
+									<a href="#" class="nav-link text-muted"><small>Overview</small></a>
+								</li>
+								<li class="nav-item top-nav-item top-nav-item-active header-item">
+									<a href="#" class="nav-link active"><small>Analytics</small></a>
+								</li>
+							</ul>
+						</div>
+						<div class="container header-item col-1">
+							<a href="#" class="btn btn-primary px-3 py-1 text-small mt-2">Home</a>
+						</div>
+					</nav>
+				</div>
+			</header>
+		</div>
+		<div class="side-bar-container">
+			<ul class="nav flex-column">
+				<li class="nav-item side-nav-item side-nav-item-active">
+					<a href="#" class="nav-link active">
+						<i class="fa fa-dashboard" style="font-size: 22px;"></i>
+					</a>
+				</li>
+				<li class="nav-item side-nav-item">
+					<a href="#" class="nav-link">
+						<i class="fa fa-newspaper-o text-muted" style="font-size: 22px;"></i>
+					</a>
+				</li>
+			</ul>
+		</div>
+		<div class="main-container bg-light">
+			<main class="container">
+				<div class="container h5 font-weight-bold mt-2 mb-5" style="color: #1a173b">
+					Summary
+				</div>
+				<div class="container section px-5" id="section-1">
+					<div class="row my-5 px-5 mx-lg-4">
+						<div class="col-4">
+							<div class="card analytics-card shadow">
+								<div class="text-center text-medium graph-title font-weight-bold my-2">Improvements In kUSD</div>
+								<div class="card-body">
+									<div class="graph-container">
+										<canvas id="improvements-canvas" class="graph-canvas"></canvas>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="col-4">
+							<div class="card analytics-card shadow">
+								<div class="text-center text-medium graph-title font-weight-bold my-2">Financial Overview</div>
+								<div class="card-body">
+									<div class="graph-container">
+										<canvas id="financial-overview-canvas" class="graph-canvas"></canvas>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="col-4">
+							<div class="card analytics-card shadow">
+								<div class="text-center text-medium graph-title font-weight-bold my-2">Goal by Metrics</div>
+								<div class="card-body">
+									<div class="graph-container">
+										<canvas id="goal-by-metrics-canvas" class="graph-canvas"></canvas>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="row my-5 px-5 mx-lg-4">
+						<div class="col-4">
+							<!-- Placeholder -->
+						</div>
+						<div class="col-4">
+							<div class="card analytics-card shadow">
+								<div class="text-center text-medium graph-title font-weight-bold my-2">Where are losses coming from?</div>
+								<div class="card-body">
+									<div class="graph-container">
+										<canvas id="losses-canvas" class="graph-canvas"></canvas>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="col-4">
+							<div class="card analytics-card shadow">
+								<div class="text-center text-medium graph-title font-weight-bold my-2">Major Contributing Losses</div>
+								<div class="card-body">
+									<div class="graph-container">
+										<canvas id="major-losses-canvas" class="graph-canvas"></canvas>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</main>
+		</div>
+	</div>
+</body></html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

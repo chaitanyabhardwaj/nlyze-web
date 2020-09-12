@@ -1,0 +1,29 @@
+@import url('https://fonts.googleapis.com/css?family=Roboto:300');
+.reference-period-select { min-width: 150px; }
+.line-select { min-width: 60px; }
+.family-select { min-width: 150px; background-color: #d8d5cf; }
+.reference-period-select, .line-select { background: url(dropdownicon_white.png) 95% / 15px no-repeat #fff; border: none; }
+.main-container { background-color: #eceff4 }
+.card { min-height: 100px; }
+.card-h-2 { min-height: 220px; }
+.card-body { position: relative; font-family: 'Roboto', sans-serif; }
+.representing-arrow img { width: 10px; height: auto; position: absolute; top: 37%; left: 29%; }
+.graph-canvas { position: absolute; bottom: 5px; }
+.graphic-representation-fam { position: absolute; }
+.graphic-representation-fam-ym { top: 17%; right: 36%; }
+.graphic-representation-fam-ou { top: 32%; right: 18%; }
+.graphic-representation-vision { bottom: 35%; right: 10%; }
+.graphic-representation-fam-qd { bottom: 15%; right: 40%; }
+.graphic-representation-fam-ps { bottom: 15%; left: 40%; }
+.graphic-representation-current { top: 45%; left: 8%; }
+.graphic-representation-fam-text { position: absolute; }
+.graphic-representation-fam-ym-text { top: -20px; left: 120%; border: 1px solid yellow; }
+.graphic-representation-fam-ou-text { top: -20px; left: 10%; border: 1px solid green; }
+.graphic-representation-vision-text { top: 25px; left: 10%; border: 1px solid darkgreen; }
+.graphic-representation-fam-qd-text { top: 35px; left: 30%; border: 1px solid skyblue; }
+.graphic-representation-fam-ps-text { top: 35px; right: 30%; border: 1px solid magenta; }
+.graphic-representation-current-text { top: -30px; right: 5%; border: 1px solid blue; }
+.dropdown-toggle::after { display: none; }
+.material-kpi-unit-toggle { cursor: pointer; }
+.pareto-option { cursor: pointer; }
+.pareto-graph-canvas { position: relative; top: 50px; }

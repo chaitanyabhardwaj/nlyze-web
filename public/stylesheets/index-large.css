@@ -1,13 +1,55 @@
 
-#main-container { margin-top: 3px; }
-#section-1 { width: 80%; }
-@media screen and (min-width: 1500px) and (max-width: 1699px) {
-	#section-1 { width: 60%; }
-}
-@media screen and (min-width: 1700px) {
-	#section-1 { width: 50%; }
-}
-#temp-ud-img { width: 50px; height: 50px; margin-bottom: 100px; }
+@import url('https://fonts.googleapis.com/css?family=Heebo');
+* { box-sizing: border-box; padding: 0px; margin: 0px; }
+input { outline: none; font-size: 80%; }
+input::-webkit-input-placeholder { color: #a7a7a7 !important; }
+input:-moz-placeholder { color: #a7a7a7 !important; }
+input::-moz-placeholder { color: #a7a7a7 !important; }
+input:-ms-input-placeholder { color: #a7a7a7 !important; }
+.clearfix { clear: both; }
+.outer-wrapper, .outer-container { position: fixed; height: 100%; width: 100%; overflow: auto; }
+.outer-wrapper { display: none; }
+.text-small { font-size: 0.7vw !important; }
+.text-medium { font-size: 1vw !important; }
+.text-heading { font-size: 1.5vw; font-weight: normal; }
+.text-muted { color: #a7a7a7 !important; }
+.text-low { color: #696969 !important; }
+.word-spacing { word-spacing: 5px !important; }
+.vertical-center { position: relative; top: 25%; }
+.dialog-box { position: fixed; top: 55px; z-index: 99; width: 100%; display: none; }
+.mt-50 { margin-top: 50px !important; }
+.my-50 { margin-top: 50px !important; margin-bottom: 50px !important; }
+.my-100 { margin-top: 100px !important; margin-bottom: 100px !important; }
+.px-50 { padding-left: 50px !important; padding-right: 50px !important; }
+.px-100 { padding-left: 100px !important; padding-right: 100px !important; }
+.px-200 { padding-left: 200px !important; padding-right: 200px !important; }
+.w-90 { width: 90% !important; }
+.w-89 { width: 89% !important; }
+.w-85 { width: 85% !important; }
+.w-84 { width: 84% !important; }
+.w-65 { width: 65% !important; }
+.w-30 { width: 30% !important; }
+.header-container { padding: 0px; }
+header { border-bottom: 1px solid #d7d7d7; margin: 0px !important; }
+.favicon-title-icon { width: 25%; height: auto; max-width: 20px; margin-right: 5px; vertical-align: middle; }
+.header-item { padding-top: 7px; padding-bottom: 7px; }
+.top-nav-item { padding-left: 0px; padding-right: 0px; }
+.basic-btn { background-color: #1462ba; color: #fff; box-shadow: 0px 0px 3px 1px #a7a7a7; }
+.main-container { padding: 0px; padding-top: 30px; min-height: 700px; }
+.login-background { background: url(login_background.svg); }
+#section-2 { background-image: url(sec_2.png); background-size: cover; min-height: 100px; margin-top: 100px; }
+.nav .active-item { padding-bottom: 10px; border-bottom: 2px solid #696969; }
+#section-4 { background: linear-gradient(#f8f9fa, #fff); }
+.pricing-bar-base { position: relative; }
+.pricing-bar { position: absolute; top: -15px; }
+.pricing-bar-content { position: absolute; top: 30px; left: 15%; }
+.pricing-color { color: #0960bd !important; }
+footer { background: url(footer_1.png); background-size: cover; }
+
+
+
+
+
 
 
 

@@ -1,0 +1,250 @@
+<!DOCTYPE html><html lang="en-US" dir="ltr"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" /><title>NLYZE | Factory Model</title><meta name="description" content="" /><meta name="owner" content="Nakul Malhotra"><meta name="author" content="Chaitanya Bhardwaj" /><base href="settings.html" target="_blank" /><meta name="referrer" content="origin-when-cross-origin" /><link rel="icon" type="image/x-icon" href="/resources/favicon_title.png" /><meta name="robots" content="index, nofollow">
+<link rel="stylesheet" type="text/css" href="lib/bootstrap-4/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" type="text/css" href="stylesheets/index-large.css">
+<link rel="stylesheet" type="text/css" href="stylesheets/settings-large.css">
+<script src="scripts/jquery-3.2.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+<script src="lib/bootstrap-4/js/bootstrap.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-functions.js"></script>
+<script src="/scripts/main.js"></script>
+<script src="/scripts/jscolor-2.0.5/jscolor.js"></script>
+<script src="/scripts/productchecker.js"></script>
+<script src="/scripts/inspector.js"></script>
+<script>
+	
+	'use strict';
+
+	//Initializing Settings
+	function Settings(user) {
+		const inst = this;
+		this.userRef = user;
+		this.db = firebase.firestore();
+		//shortcuts to dom elements
+		this.standardsSelect = $('.standards-select');
+		this.optionsSelect = $('.options-select');
+		this.optionsSelectValue = this.optionsSelect.find(':selected').val();
+		this.initLayout();
+		//add events
+		//add standardsSelect changeEvent
+		this.standardsSelect.change(function() {
+			inst.standardsSelectValue = inst.standardsSelect.find(':selected').val();
+			if(inst.standardsSelectValue != 0) {
+				//enable optionsSelect
+				displayDialog("Isn't it cool", "success");
+				inst.optionsSelect.prop('disabled',false);
+				inst.optionsSelect.addClass('bg-white');
+				if(inst.optionsSelectValue === 'headers')
+					inst.displayHeaders();
+				else
+					inst.displayFamily();
+			}
+			else {
+				//clear existing data
+				$('.table-headers').remove();
+				$('.table-data').remove();
+				$('select').find('option.options-select-data').remove();
+				inst.optionsSelect.prop('disabled',true);
+				inst.optionsSelect.removeClass('bg-white');
+			}
+		});
+		//add optionsSelect changeEvent
+		this.optionsSelect.change(function() {
+			inst.optionsSelectValue = inst.optionsSelect.find(':selected').val();
+			if(inst.optionsSelectValue != 0) {
+				console.log('Fetching....');
+				//inst.displayStandards();
+			}
+		});
+	};
+
+	Settings.prototype.initLayout = function() {
+		//clear existing fields
+		$('input').val('');
+		$('select').find('option.data-options').remove();
+		//fetch factoryFileTypes
+		this.db.collection('users/' + this.userRef.uid + '/products/np002/factoryFileTypes/').get().then(querySnapshot => {
+			querySnapshot.forEach(type => {
+				$("<option class='data-option' value='" + type.id + "'>").appendTo("select.standards-select").text(type.data().displayName);
+			});
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	Settings.prototype.displayHeaders = function() {
+		//displayHeaders according to the selected FileType
+		this.db.collection('users/' + this.userRef.uid + '/products/np002/factoryFileTypes/' + this.standardsSelectValue + '/' + this.optionsSelectValue).get().then(querySnapshot => {
+			querySnapshot.forEach(doc => {
+
+			})
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	Settings.prototype.displayFamily = function() {
+		//displayTableHeaders
+		$('.standards-header-append-to').append($("<th class='text-low text-center'>").text('Family'))
+			.append($("<th class='text-low text-center'>").text('Designation'))
+			.append($("<th class='text-low text-center'>").text('Color'));
+		//displayFamily according to the selected FileType
+		return this.db.collection('users/' + this.userRef.uid + '/products/np002/factoryFileTypes/' + this.standardsSelectValue + '/' + this.optionsSelectValue).get().then(querySnapshot => {
+			querySnapshot.forEach(doc => {
+				$("<tr class='table-data'>").appendTo('.standards-data-append-to')
+					.append($("<td class='text-medium text-muted text-center'>").text(doc.id))
+					.append($("<td class='text-medium text-muted text-center'>").text(doc.data().designation))
+					.append($("<td>").html('<input class="jscolor" value="#f83">'));
+			});
+		}).catch(err => {
+			console.log(err);
+		});
+	};
+
+	//FUCNTION TO DISPLAY TEXT DIALOG AT THE TOP
+	function displayDialog(msg, dialogType) {
+		$('html, body').scrollTop(0);
+		var dialogBox = $('.alert-' + dialogType);
+		if(dialogBox.length === 0) //dialogBox with class 'dialogType' does not exsists
+			dialogBox =$('.alert-warning');
+		dialogBox.html(msg);
+		dialogBox.fadeIn();
+		var timer = setInterval(function() {
+			dialogBox.fadeOut();
+			clearInterval(timer);
+		}, 4000);
+	};
+
+	$(document).ready(function() {
+		firebase.auth().onAuthStateChanged(function(user) {
+			if(user) {
+				//User is signed in
+				const inspector = new Inspector(user);
+				inspector.checkDisabled();
+				const settings = new Settings(user);
+			}
+		});
+	});
+
+</script>
+</head><body>
+	<div class="outer-wrapper container-fluid"></div>
+	<div class="outer-container">
+		<div class="alert alert-success dialog-box text-center"></div>
+		<div class="alert alert-warning dialog-box text-center"></div>
+		<div class="alert alert-danger dialog-box text-center"></div>
+		<div class="header-container container-fluid">
+			<header class="container-fluid row">
+				<div class="container slider-button-container col-1">
+					<div class="container slider-button header-item">
+						<img src="resources/side_bar_slider.png" alt="SLIDE" class="side-bar-slider">
+					</div>
+				</div>
+				<div class="container nav-container col-11">
+					<nav class="container row">
+						<div class="container col-11">
+							<ul class="nav">
+								<li class="nav-item top-nav-item top-nav-item-active header-item">
+									<a href="#" class="nav-link active"><small>Overview</small></a>
+								</li>
+								<li class="nav-item top-nav-item header-item">
+									<a href="#" class="nav-link text-muted"><small>Analytics</small></a>
+								</li>
+							</ul>
+						</div>
+						<div class="container header-item col-1">
+							<a href="#" class="btn btn-primary px-3 py-1 text-small mt-2">Home</a>
+						</div>
+					</nav>
+				</div>
+			</header>
+		</div>
+		<div class="side-bar-container">
+			<ul class="nav flex-column">
+				<li class="nav-item side-nav-item">
+					<a href="#" class="nav-link active side-nav-item-active">
+						<i class="fa fa-dashboard" style="font-size: 22px;"></i>
+					</a>
+				</li>
+				<li class="nav-item side-nav-item">
+					<a href="#" class="nav-link">
+						<i class="fa fa-comments text-muted" style="font-size: 22px;"></i>
+					</a>
+				</li>
+				<li class="nav-item side-nav-item">
+					<a href="#" class="nav-link">
+						<i class="fa fa-gear text-muted" style="font-size: 22px;"></i>
+					</a>
+				</li>
+			</ul>
+		</div>
+		<div class="main-container bg-light">
+			<main class="container">
+				<div class="container section" id="section-1">
+					<div class="container">
+						<div class="text-low d-inline-block font-weight-bold h5">
+							Plant Summary
+						</div>
+					</div>
+					<div class="card my-3">
+						<div class="card-body container">
+							<div class="container bg-light py-1 text-center rounded w-50">
+								<div class="text-muted text-medium d-inline mr-4">Standard</div>
+								<div class="d-inline-block w-50 ml-4">
+									<select class="bg-white w-100 text-medium text-muted standards-select">
+										<option value="0">Unit</option>
+									</select>
+								</div>
+							</div>
+							<div class="container border rounded my-5">
+								<div class="container text-center h5 my-4">Title of Standard</div>
+								<div class="container">
+									<table class="table table-striped standards-table">
+										<thead>
+											<tr class="standards-header-append-to"></tr>
+										</thead>
+										<tbody class="standards-data-append-to">									
+										</tbody>
+									</table>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</main>
+		</div>
+	</div>
+</body></html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

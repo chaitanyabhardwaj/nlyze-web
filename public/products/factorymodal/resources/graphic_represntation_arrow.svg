@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="85px" height="32px" viewBox="0 0 85 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: sketchtool 50.2 (55047) - http://www.bohemiancoding.com/sketch -->
+    <title>3BB42756-BA89-4B0E-875F-8A053020EFA4</title>
+    <desc>Created with sketchtool.</desc>
+    <defs>
+        <path d="M23.8994949,14 L13.2279221,3.32842712 L16.0563492,0.5 L31.6126984,16.0563492 L16.0563492,31.6126984 L13.2279221,28.7842712 L24.0121933,18 L-1.37635684e-15,18 L-1.37635684e-15,14 L23.8994949,14 Z" id="path-1"></path>
+    </defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Analytics---Reports---Material" transform="translate(-939.000000, -385.000000)">
+            <g id="GraphicRepresentation" transform="translate(709.000000, 241.000000)">
+                <g id="Linear" transform="translate(230.000000, 143.000000)">
+                    <g id="Group" transform="translate(32.000000, 15.218750)" stroke="#417505" stroke-width="4">
+                        <path d="M0,1.28125 L21,1.28125" id="Line"></path>
+                    </g>
+                    <g id="→" transform="translate(53.000000, 0.500000)">
+                        <mask id="mask-2" fill="white">
+                            <use xlink:href="#path-1"></use>
+                        </mask>
+                        <use id="Arrowhead" fill="#417505" xlink:href="#path-1"></use>
+                    </g>
+                    <g id="←" transform="translate(16.000000, 16.500000) scale(-1, 1) translate(-16.000000, -16.500000) translate(0.000000, 14.500000)" fill="#417505">
+                        <rect id="Line" x="0" y="0" width="32" height="4"></rect>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1440px" height="1024px" viewBox="0 0 1440 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: sketchtool 50.2 (55047) - http://www.bohemiancoding.com/sketch -->
+    <title>E2B2EC44-3DE7-44E8-8C06-C32BF502CA77</title>
+    <desc>Created with sketchtool.</desc>
+    <defs>
+        <linearGradient x1="100%" y1="100%" x2="0%" y2="0%" id="linearGradient-1">
+            <stop stop-color="#00F2FE" offset="0%"></stop>
+            <stop stop-color="#0077FF" offset="100%"></stop>
+        </linearGradient>
+        <rect id="path-2" x="0" y="0" width="1440" height="1024"></rect>
+    </defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Assets" transform="translate(-8.000000, -1141.000000)">
+            <g id="Background" transform="translate(8.000000, 1141.000000)">
+                <mask id="mask-3" fill="white">
+                    <use xlink:href="#path-2"></use>
+                </mask>
+                <use id="Mask" fill="url(#linearGradient-1)" xlink:href="#path-2"></use>
+                <g id="Pattern" mask="url(#mask-3)">
+                    <polygon id="Shape" fill="#FFFFFF" points="1728 1112 1152 1112 1152 556"></polygon>
+                    <polygon id="Shape" fill="#000000" opacity="0.0299999993" points="864 834 576 834 576 556"></polygon>
+                    <polygon id="Shape" fill="#000000" opacity="0.0299999993" points="576 1112 288 1112 288 834"></polygon>
+                    <polygon id="Shape" fill="#FFFFFF" points="288 834 0 834 0 556"></polygon>
+                    <polygon id="Shape" fill="#000000" opacity="0.0299999993" points="1440 556 1152 556 1152 278"></polygon>
+                    <polygon id="Shape" fill="#000000" opacity="0.0299999993" points="1152 278 864 278 864 0"></polygon>
+                    <polygon id="Shape" fill="#000000" opacity="0.0299999993" points="1152 556 576 556 576 0"></polygon>
+                    <polygon id="Shape" fill="#000000" opacity="0.0299999993" points="576 556 288 556 288 278"></polygon>
+                    <polygon id="Shape" fill="#000000" opacity="0.0299999993" points="288 278 0 278 0 0"></polygon>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

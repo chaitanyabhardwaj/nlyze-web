@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Breakdown</title>
+  <link rel="stylesheet" href="../node_modules/bulma/css/bulma.css">
+  <link rel="stylesheet" href="./css/index.css">
+
+  <!-- Firebase App is always required and must be first -->
+  <script src="https://www.gstatic.com/firebasejs/5.3.0/firebase-app.js"></script>
+
+  <!-- Add additional services that you want to use -->
+  <script src="https://www.gstatic.com/firebasejs/5.3.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/5.3.0/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/5.3.0/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/5.3.0/firebase-messaging.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/5.3.0/firebase-functions.js"></script>
+
+  <!-- Comment out (or don't include) services that you don't want to use -->
+  <!-- <script src="https://www.gstatic.com/firebasejs/5.3.0/firebase-storage.js"></script> -->
+
+  <script>
+  var config = {
+    apiKey: "AIzaSyCXWIr6ctkGUGYRvXsYgFG-NnCk6VRW_7Q",
+    authDomain: "nlyze-1.firebaseapp.com",
+    databaseURL: "https://nlyze-1.firebaseio.com",
+    projectId: "nlyze-1",
+    storageBucket: "nlyze-1.appspot.com",
+    messagingSenderId: "285435874741"
+  };
+    firebase.initializeApp(config);
+
+
+
+  </script>
+
+
+
+
+
+  <script defer src="https://use.fontawesome.com/releases/v5.1.0/js/all.js"></script>
+
+</head>
+
+<body>
+  <nav class="level navigation">
+    <div class="level-item has-text-centered">
+      <a href="./recorder.html"> Breakdown  </a>
+    </div>
+    <div class="level-item has-text-centered">
+      <a href="./reports.html"> Reports </a>
+    </div>
+    <div class="level-item has-text-centered">
+      <a href="./log.html"> log </a>
+    </div>
+    <div class="level-item has-text-centered">
+      <a href="./workforce.html"> workforce </a>
+    </div>
+    <div class="level-item has-text-centered">
+      <a href="./breakdown.html"> Plant </a>
+    </div>
+  </nav>
+
+  <div class="modal">
+    <div class="modal-background"></div>
+    <div class="modal-card">
+      <header class="modal-card-head">
+        <p class="modal-card-title">Modal title</p>
+        <button class="delete" aria-label="close"></button>
+      </header>
+      <section class="modal-card-body">
+        <!-- Content ... -->
+      </section>
+      <footer class="modal-card-foot">
+        <button class="button is-success">Save changes</button>
+        <button class="button">Cancel</button>
+      </footer>
+    </div>
+  </div>
+
+
+
+  <section class="containerMiddle">
+
+    <div id="firstModal" class="modal">
+      <div class="modal-background"></div>
+      <div class="modal-card">
+        <header class="modal-card-head">
+          <p class="modal-card-title">Modal title</p>
+          <button class="delete" aria-label="close" onclick="removeModal('firstModal')"></button>
+        </header>
+        <section class="modal-card-body">
+
+          <input class="input" type="text" placeholder="Text input">
+        </section>
+        <footer class="modal-card-foot">
+          <button class="button is-success">Save changes</button>
+          <button class="button">Cancel</button>
+        </footer>
+      </div>
+    </div>
+
+    <button id='btn-1' type="button" name="first" class="breakdown main-text" onclick="enableButton('btn-2');disableButton('btn-1');show('btn-1')"> Breakdown Start </button>
+    <button id='btn-2' type="button" name="second" class="breakdown main-text" onclick="enableButton('btn-3');disableButton('btn-2');show('btn-2')" disabled> Repair Start </button>
+    <button id='btn-3' type="button" name="third" class="breakdown main-text" onclick="enableButton('btn-4');disableButton('btn-3');show('btn-3')" disabled> Repair End </button>
+    <button id='btn-4' type="button" name="fourth" class="breakdown main-text" onclick="enableButton('btn-1');show('btn-4')" disabled> Breakdown Ended </button>
+  </section>
+
+</body>
+
+<script src="./js/index.js"></script>
+
+</html>

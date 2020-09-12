@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Test</title>
+</head>
+<script src="jquery-3.2.1.min.js"></script>
+<script src="dist/xlsx.full.min.js"></script>
+<script src="FileUploader.js"></script>
+<script>
+	
+	'use strict';
+
+	function Tester() {
+	};
+
+	Tester.prototype.passFileData = function(fileObj) {
+		console.log(fileObj.content[Object.keys(fileObj.content)[0]]);
+	};
+
+	$(document).ready(function() {
+		const tester = new Tester();
+		const fileUploader = new FileUploader(tester,1);
+	});
+
+</script>
+<body>
+<input type="file" id="file-upload" placeholder="File Upload">
+</body>
+</html>

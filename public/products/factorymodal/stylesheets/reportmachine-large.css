@@ -1,0 +1,13 @@
+@import url('https://fonts.googleapis.com/css?family=Roboto:300');
+.reference-period-select { min-width: 150px; }
+.line-select { min-width: 60px; }
+.family-select { min-width: 150px; background-color: #d8d5cf; }
+.reference-period-select, .line-select { background: url(dropdownicon_white.png) 95% / 15px no-repeat #fff; border: none; }
+.main-container { background-color: #eceff4 }
+.card { min-height: 100px; }
+.card-h-2 { min-height: 220px; }
+.card-body { position: relative; font-family: 'Roboto', sans-serif; }
+.representing-arrow img { width: 10px; height: auto; position: absolute; top: 37%; left: 29%; }
+.graph-canvas { position: absolute; bottom: 5px; }
+.pareto-option { cursor: pointer; }
+.pareto-graph-canvas { position: relative; top: 50px; }

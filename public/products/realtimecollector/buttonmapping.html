@@ -24,7 +24,7 @@
 <script src="https://www.gstatic.com/firebasejs/4.12.0/firebase.js"></script>
 <script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-firestore.js"></script>
 <script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-functions.js"></script>
-<script src="/scripts/main.js"></script>
+<script src="scripts/main.js"></script>
 <script src="/scripts/productchecker.js"></script>
 <script src="/scripts/inspector.js"></script>
 <script>
@@ -35,12 +35,15 @@
 		const inst = this;
 		this.userRef = user;
 		this.db = firebase.firestore();
+		this.productRef = this.db.collection('users').doc(user.uid).collection('products').doc('np001');
 		this.buttonMappingRef = this.db.collection('users/' + user.uid + '/products/np001/button_mapping');
 		//dom element shortcut
 		this.outerWrapper = $('#outer-wrapper');
 		this.floatingHeading = $('#floating-heading');
 		this.floatingContent = $('#floating-content-container');
 		this.floatingContainer = $('#floating-container');
+		//Calling initializing functions
+		this.authUser();
 		//Instantiate the layout
 		this.initLayout();
 		//Add event listeners
@@ -59,6 +62,24 @@
 		$('#floating-close-container').click(function() {
 			inst.outerWrapper.hide();
 			inst.floatingContainer.hide();
+		});
+	};
+
+	ButtonMapping.prototype.authUser = function() {
+		this.productRef.get().then(function(p) {
+			if(p.exists) {
+				if(p.data().active) {
+					//Authorized product
+				}
+				else {
+					//Product not authorized
+					window.location.replace('/');
+				}
+			}
+			else 
+				window.location.replace('/');
+		}).catch(function(error) {
+			console.log(error);
 		});
 	};
 

@@ -1,0 +1,397 @@
+<!DOCTYPE html><html lang="en-US" dir="ltr"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" /><title>NLYZE | Factory Model</title><meta name="description" content="" /><meta name="owner" content="Nakul Malhotra"><meta name="author" content="Chaitanya Bhardwaj" /><base href="analyticsresults.html" target="_self" /><meta name="referrer" content="origin-when-cross-origin" /><link rel="icon" type="image/x-icon" href="/resources/favicon_title.png" /><meta name="robots" content="index, nofollow">
+<link rel="stylesheet" type="text/css" href="lib/bootstrap-4/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" type="text/css" href="stylesheets/index-large.css">
+<link rel="stylesheet" type="text/css" href="stylesheets/analyticsresults-large.css">
+<script src="scripts/jquery-3.2.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+<script src="lib/bootstrap-4/js/bootstrap.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.12.0/firebase-functions.js"></script>
+<script src="/scripts/main.js"></script>
+<script src="/scripts/productchecker.js"></script>
+<script src="/scripts/inspector.js"></script>
+<script>
+	
+	'use strict';
+
+	//Initialize AnalyticsResult
+	function AnalyticsResults(user) {
+		const inst = this;
+		this.userRef = user;
+		this.db = firebase.firestore();
+		//HTML DOM elements shortcut
+		this.areaSelect =  $('.area-select');
+
+		this.areaDescriptionTable = $('.area-description-table');
+		this.areaLayoutTable = $('.area-layout-table');
+
+		//Add event listeners
+		this.areaSelect.change(function() {
+			//get areaValue
+			inst.areaSelectValue = inst.areaSelect.find(':selected').val();
+			if(inst.areaSelectValue === 0)
+				inst.fetchAnalyticsOverviewData();
+			else
+				inst.fetchAnalyticsOverviewDataByArea();
+		});
+
+		//init functions
+		this.fetchAnalyticsOverviewData();
+	};
+
+	AnalyticsResult.prototype.fetchAnalyticsOverviewData = function() {
+		const inst = this;
+		var i = 0;
+		this.db.collection('users/' + this.userRef.uid + '/products/np002/analyticsoverview/').get().then(querySnapshot => {
+			querySnapshot.forEach(doc => {
+				inst.overviewData[i++] = doc.data();
+			});
+			//display table data
+			inst.displayAreaDescription();
+			inst.displayAreaLayout();
+		});
+	};
+
+	AnalyticsResult.prototype.fetchAnalyticsOverviewDataByArea = function() {
+		const inst = this;
+		var i = 0;
+		this.db.collection('users/' + this.userRef.uid + '/products/np002/analyticsoverview/').get().then(querySnapshot => {
+			querySnapshot.forEach(doc => {
+				if(inst.areaSelectValue === doc.data.area)
+					inst.overviewData[i++] = doc.data();
+			});
+			//display table data
+			inst.displayAreaDescription();
+			inst.displayAreaLayout();
+		});
+	};
+
+	AnalyticsResult.prototype.displayAreaDescription = function() {
+		$.each(this.overviewData, (i, data) => {
+			$('<tr class="option-data">').appendTo('.area-description-table')
+				.append($('<td>').text(data.area))
+				.append($('<td>').text(data.areaDescription));
+		});
+	};
+
+	AnalyticsResult.prototype.displayAreaLayout = function() {
+		$.each(this.overviewData, (i, data) => {
+			$('<tr class="option-data">').appendTo('.area-layout-table')
+				.append($('<td>').text(data.area))
+				.append($('<td>').text(data.line))
+				.append($('<td>').text(data.lineDescription));
+		});
+	};
+
+	$(document).ready(function() {
+		firebase.auth().onAuthStateChanged(function(user) {
+			if(user) {
+				//User is signed in
+				const inspector = new Inspector(user);
+				inspector.checkDisabled();
+				const analyticsResult = new AnalyticsResult(user);
+			}
+		});
+	});
+
+</script>
+</head><body>
+	<div class="outer-wrapper container-fluid"></div>
+	<div class="outer-container">
+		<div class="alert alert-success dialog-box text-center"></div>
+		<div class="alert alert-warning dialog-box text-center"></div>
+		<div class="alert alert-danger dialog-box text-center"></div>
+		<div class="header-container container-fluid">
+			<header class="container-fluid row">
+				<div class="container slider-button-container col-1">
+					<div class="container slider-button header-item">
+						<img src="resources/side_bar_slider.png" alt="SLIDE" class="side-bar-slider">
+					</div>
+				</div>
+				<div class="container nav-container col-11">
+					<nav class="container row">
+						<div class="container col-11">
+							<ul class="nav">
+								<li class="nav-item top-nav-item header-item">
+									<a href="/products/factorymodal/" class="nav-link text-muted"><small>Overview</small></a>
+								</li>
+								<li class="nav-item top-nav-item top-nav-item-active header-item">
+									<a class="nav-link active"><small>Analytics</small></a>
+								</li>
+							</ul>
+						</div>
+						<div class="container header-item col-1">
+							<a href="#" class="btn btn-primary px-3 py-1 text-small mt-2">Home</a>
+						</div>
+					</nav>
+				</div>
+			</header>
+		</div>
+		<div class="side-bar-container">
+			<ul class="nav flex-column">
+				<li class="nav-item side-nav-item">
+					<a class="nav-link active side-nav-item-active p-2">
+						<img src="resources/analytics_side_bar.png" alt="Analytics">
+					</a>
+				</li>
+				<li class="nav-item side-nav-item">
+					<a href="reportmachine.html" class="nav-link p-2">
+						<img src="resources/reports_side_bar.png" class="opacity-5" alt="Reports">
+					</a>
+				</li>
+				<li class="nav-item side-nav-item">
+					<a href="#" class="nav-link p-2">
+						<img src="resources/cost_structure_side_bar.png" class="opacity-5" alt="Cost Structure">
+					</a>
+				</li>
+				<li class="nav-item side-nav-item">
+					<a href="masterplan.html" class="nav-link p-2">
+						<img src="resources/masterplan_side_bar.png" class="opacity-5" alt="Masterplan">
+					</a>
+				</li>
+			</ul>
+		</div>
+		<div class="main-container pt-0 pr-0">
+			<main>
+				<div class="container-fluid section bg-light pl-5 pr-0" id="section-1">
+					<div class="border-bottom p-4">
+						<div class="d-inline-block font-weight-bold h5 mr-5">
+							Overview
+						</div>
+						<div class="d-inline-block mx-2">
+							<select class="reference-period-select select-type-input bg-primary text-white text-medium p-1 px-2 rounded font-weight-light d-block">
+								<option value="0">Reference Period</option>
+							</select>
+						</div>
+						<div class="d-inline-block mx-2">
+							<select class="area-select select-type-input bg-primary text-white text-medium p-1 px-2 rounded font-weight-light d-block">
+								<option value="0">Area</option>
+							</select>
+						</div>
+					</div>
+					<div class="border-bottom py-1 px-4">
+						<ul class="nav">
+							<li class="nav-item mr-4">
+								<a class="nav-link text-small text-danger font-weight-bold" href="/products/factorymodal/analyticsresults.html">RESULTS</a>
+							</li>
+							<li class="nav-item ml-4">
+								<a class="nav-link text-small text-muted font-weight-bold" href="/products/factorymodal/analyticslayout.html">LAYOUT</a>
+							</li>
+						</ul>
+					</div>
+				</div>
+				<div class="container">
+					<div class="card my-4">
+						<div class="card-head m-3">
+							<div class="bg-dark rounded text-white text-medium d-inline-block px-3 py-1">
+								FINANCIAL DATA (K USD)
+							</div>
+						</div>
+						<div class="card-body">
+							<div class="my-3">
+								<canvas class="financial-data-graph-canvas"></canvas>
+							</div>
+						</div>
+					</div>
+					<div class="card my-4">
+						<div class="card-head m-3">
+							<div class="bg-dark rounded text-white text-medium d-inline-block px-3 py-1">
+								INDICATORS
+							</div>
+						</div>
+						<div class="card-body">
+							<div class="row my-4">
+								<div class="col-6 text-white">
+									<div class="row px-3 rounded indicators-container oee-indicator-container mx-0">
+										<div class="col-3">
+											<div class="d-inline-block h3"><strong>OEE</strong></div>
+										</div>
+										<div class="col-1 text-center">
+											<div class="vertical-side-bar rounded"></div>
+										</div>
+										<div class="col-8">
+											<div class="row">
+												<div class="col-4 text-center h3">
+													0%
+												</div>
+												<div class="col-4">
+													<img src="resources/analytics_results_indicator_arrow.png" class="w-100">
+												</div>
+												<div class="col-4 text-center h3">
+													0%
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="col-6 text-white">
+									<div class="row px-3 rounded indicators-container matteff-indicator-container  mx-0">
+										<div class="col-3">
+											<div class="d-inline-block h3"><strong>MattEff</strong></div>
+										</div>
+										<div class="col-1 text-center">
+											<div class="vertical-side-bar rounded"></div>
+										</div>
+										<div class="col-8">
+											<div class="row">
+												<div class="col-4 text-center h3">
+													0%
+												</div>
+												<div class="col-4">
+													<img src="resources/analytics_results_indicator_arrow.png" class="w-100">
+												</div>
+												<div class="col-4 text-center h3">
+													0%
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="row my-4">
+								<div class="col-6 text-white">
+									<div class="row px-3 rounded indicators-container ole-indicator-container mx-0">
+										<div class="col-3">
+											<div class="d-inline-block h3"><strong>OLE</strong></div>
+										</div>
+										<div class="col-1 text-center">
+											<div class="vertical-side-bar rounded"></div>
+										</div>
+										<div class="col-8">
+											<div class="row">
+												<div class="col-4 text-center h3">
+													0%
+												</div>
+												<div class="col-4">
+													<img src="resources/analytics_results_indicator_arrow.png" class="w-100">
+												</div>
+												<div class="col-4 text-center h3">
+													0%
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="col-6 text-white">
+									<div class="row px-3 rounded indicators-container enecons-indicator-container mx-0">
+										<div class="col-3">
+											<div class="d-inline-block h3"><strong>EneCons</strong></div>
+										</div>
+										<div class="col-1 text-center">
+											<div class="vertical-side-bar rounded"></div>
+										</div>
+										<div class="col-8">
+											<div class="row">
+												<div class="col-4 text-center h3">
+													0%
+												</div>
+												<div class="col-4">
+													<img src="resources/analytics_results_indicator_arrow.png" class="w-100">
+												</div>
+												<div class="col-4 text-center h3">
+													0%
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="card my-4">
+						<div class="card-head m-3">
+							<div class="bg-dark rounded text-white text-medium d-inline-block px-3 py-1">
+								FINANCIAL DATA - SCOPE COVERED
+							</div>
+						</div>
+						<div class="card-body">
+							<div class="my-3">
+								<div class="table-container">
+									<table class="table scope-covered-table">
+										<thead>
+											<tr>
+												<th class="text-low">Cost Structure</th>
+												<th class="text-low">Family</th>
+												<th class="text-low">Variable</th>
+												<th class="text-low">Fixed</th>
+												<th class="text-low">Total</th>
+												<th class="text-low">Scope Covered</th>
+												<th class="text-low">Losses</th>
+												<th class="text-low">Potential Savings</th>
+											</tr>
+										</thead>
+										<tbody>
+										</tbody>
+									</table>
+								</div>
+							</div>
+							<div class="my-3 d-none">
+								<canvas class="scope-covered-graph-canvas"></canvas>
+							</div>
+						</div>
+					</div>
+					<div class="card my-4">
+						<div class="card-head m-3">
+							<div class="bg-dark rounded text-white text-medium d-inline-block px-3 py-1">
+								LOSSES EVALUTION AND POTENTIAL SAVINGS (KUSD)
+							</div>
+						</div>
+						<div class="card-body">
+							<div class="my-3">
+								<canvas class="losses-evaluation-graph-canvas"></canvas>
+							</div>
+						</div>
+					</div>
+				</div>
+			</main>
+		</div>
+	</div>
+</body></html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
